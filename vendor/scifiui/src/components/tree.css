@@ -1,0 +1,106 @@
+@layer components {
+  .tree-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    padding: 0.35rem;
+    font-size: 0.78125rem;
+    color: var(--scifi-text);
+    user-select: none;
+  }
+
+  .tree-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.28rem 0.45rem;
+    border-radius: var(--scifi-radius);
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .tree-row:hover {
+    background: rgba(var(--scifi-primary-rgb), 0.08);
+    color: var(--scifi-text);
+  }
+  .tree-row.selected,
+  .tree-row[aria-selected="true"] {
+    background: rgba(var(--scifi-primary-rgb), 0.14);
+    border-color: rgba(var(--scifi-primary-rgb), 0.35);
+    color: var(--scifi-active-text);
+    box-shadow: inset 2px 0 0 var(--scifi-primary);
+  }
+
+  .tree-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--scifi-muted);
+    transition: transform 0.15s var(--scifi-ease);
+  }
+  .tree-toggle svg {
+    display: block;
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+  .tree-item.open > .tree-row .tree-toggle,
+  .tree-toggle[aria-expanded="true"] {
+    transform: rotate(90deg);
+    color: var(--scifi-primary);
+  }
+  .tree-toggle.is-leaf {
+    visibility: hidden;
+  }
+
+  .tree-icon {
+    flex-shrink: 0;
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--scifi-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tree-icon svg {
+    display: block;
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+  .tree-row.selected .tree-icon,
+  .tree-item.open > .tree-row .tree-icon {
+    color: var(--scifi-cyan);
+  }
+
+  .tree-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tree-children {
+    display: none;
+    flex-direction: column;
+    gap: 0.05rem;
+    margin-left: 0.65rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid rgba(var(--scifi-muted-rgb), 0.25);
+  }
+  .tree-item.open > .tree-children {
+    display: flex;
+  }
+}

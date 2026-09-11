@@ -1,0 +1,122 @@
+/* @scifiui/core — base typography, scrollbars, selection, perf-lite */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--scifi-font);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background: var(--scifi-bg);
+    color: var(--scifi-text);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--scifi-bg);
+    color: var(--scifi-text);
+    font-family: var(--scifi-font);
+  }
+
+  ::selection {
+    background: var(--scifi-selection);
+  }
+
+  code,
+  pre,
+  kbd,
+  samp,
+  input,
+  textarea,
+  button,
+  select {
+    font-family: var(--scifi-font);
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scifi-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scifi-primary);
+    box-shadow: 0 0 8px var(--scifi-primary-glow);
+  }
+}
+
+/* Uppercase tracked label utility (Adaan signature metadata) */
+@layer utilities {
+  .label-kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--scifi-muted);
+  }
+}
+
+/* Performance gating */
+html.perf-lite .glass,
+html.perf-lite .pane,
+html.perf-lite .console-panel,
+html.perf-lite .app-bar,
+html.perf-lite .metric-card,
+html.perf-lite .modal,
+html.perf-lite .command-palette,
+html.perf-lite .command-palette-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.perf-lite .glass {
+  background: var(--scifi-surface-solid);
+}
+
+html.perf-lite .hero-title,
+html.perf-lite .brand-mark {
+  animation: none;
+}
+html.perf-lite .neon-flicker,
+html.perf-lite .float-y,
+html.perf-lite .border-pulse,
+html.perf-lite .scan-line,
+html.perf-lite .status-chip .dot {
+  animation: none;
+}
+html.perf-lite .glow-accent,
+html.perf-lite .glow-cyan {
+  box-shadow: none;
+}
+html.perf-lite .glow-text {
+  text-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-title,
+  .brand-mark,
+  .neon-flicker,
+  .float-y,
+  .border-pulse,
+  .scan-line,
+  .status-chip .dot,
+  .caret-blink::after {
+    animation: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}

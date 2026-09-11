@@ -1,0 +1,124 @@
+@layer components {
+  .dropdown {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 80;
+    min-width: 10rem;
+    padding: 0.35rem;
+    border-radius: var(--scifi-radius-lg);
+    border: 1px solid var(--scifi-border-accent);
+    background: linear-gradient(
+      165deg,
+      rgba(var(--scifi-surface-1-rgb), 0.96),
+      rgba(var(--scifi-surface-2-rgb), 0.98)
+    );
+    box-shadow:
+      0 12px 36px -10px rgba(var(--scifi-shadow-rgb), 0.65),
+      0 0 0 1px rgba(var(--scifi-primary-rgb), 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: none;
+  }
+  .dropdown.open > .dropdown-menu,
+  .dropdown-menu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .dropdown-end > .dropdown-menu {
+    left: auto;
+    right: 0;
+  }
+
+  .menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4rem 0.65rem;
+    border: none;
+    border-radius: var(--scifi-radius);
+    background: transparent;
+    color: var(--scifi-text);
+    font: inherit;
+    font-size: 0.78125rem;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+  }
+  .menu-item:hover,
+  .menu-item:focus-visible {
+    background: rgba(var(--scifi-primary-rgb), 0.12);
+    color: var(--scifi-active-text);
+    outline: none;
+  }
+  .menu-item.active {
+    background: rgba(var(--scifi-primary-rgb), 0.18);
+    color: var(--scifi-primary);
+  }
+  .menu-item:disabled,
+  .menu-item[aria-disabled="true"] {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .menu-divider {
+    height: 1px;
+    margin: 0.3rem 0.35rem;
+    background: var(--scifi-border);
+    border: none;
+  }
+
+  .menu-label {
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--scifi-muted);
+  }
+
+  .context-menu {
+    position: fixed;
+    z-index: 210;
+    min-width: 11rem;
+    padding: 0.35rem;
+    border-radius: var(--scifi-radius-lg);
+    border: 1px solid var(--scifi-border-accent);
+    background: linear-gradient(
+      165deg,
+      rgba(var(--scifi-surface-1-rgb), 0.96),
+      rgba(var(--scifi-surface-2-rgb), 0.98)
+    );
+    box-shadow:
+      0 12px 36px -10px rgba(var(--scifi-shadow-rgb), 0.65),
+      0 0 0 1px rgba(var(--scifi-primary-rgb), 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .menu-item-danger {
+    color: var(--scifi-error);
+  }
+  .menu-item-danger:hover,
+  .menu-item-danger:focus-visible {
+    background: rgba(var(--scifi-error-rgb), 0.12);
+    color: var(--scifi-error);
+  }
+}

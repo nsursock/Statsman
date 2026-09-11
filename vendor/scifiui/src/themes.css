@@ -1,0 +1,436 @@
+/* @scifiui/core — design tokens (ported from AdaanIDE)
+   Override any --scifi-* variable on :root or [data-theme] to retheme. */
+
+:root,
+:root[data-theme="retrowave"],
+[data-theme="retrowave"] {
+
+  --scifi-bg: #050010;
+  --scifi-surface: rgba(var(--scifi-surface-1-rgb), 0.65);
+  --scifi-surface-solid: #160a35;
+  --scifi-surface-hover: rgba(36, 18, 80, 0.75);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(var(--scifi-surface-1-rgb), 0.8), rgba(var(--scifi-surface-2-rgb), 0.9));
+  --scifi-primary: #ff2e9a;
+  --scifi-secondary: #b46bff;
+  --scifi-cyan: #2ee6ff;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.4);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.4);
+  --scifi-text: #e8e6ff;
+  --scifi-muted: #7a6aa8;
+  --scifi-success: #69f0ae;
+  --scifi-warning: #ffb86c;
+  --scifi-error: #ff5555;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.3);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.35);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.3);
+  --scifi-glow: 0 0 20px var(--scifi-primary-glow);
+  --scifi-glow-text: 0 0 10px var(--scifi-primary-glow);
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ff2e9a 0%, #b46bff 25%, #2ee6ff 50%, #b46bff 75%, #ff2e9a 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 46, 154;
+  --scifi-secondary-rgb: 180, 107, 255;
+  --scifi-cyan-rgb: 46, 230, 255;
+  --scifi-muted-rgb: 122, 106, 168;
+  --scifi-error-rgb: 255, 85, 85;
+  --scifi-success-rgb: 105, 240, 174;
+  --scifi-warning-rgb: 255, 184, 108;
+  /* Semantic surface layers (rgb) */
+  --scifi-surface-1-rgb: 22, 10, 53;
+  --scifi-surface-2-rgb: 8, 4, 24;
+  --scifi-bg-deep-rgb: 5, 0, 16;
+  --scifi-active-text: #ffffff;
+  --scifi-shadow-rgb: 0, 0, 0;
+  --scifi-backdrop-rgb: 0, 0, 0;
+  --scifi-radius: 0.375rem;
+  --scifi-radius-lg: 0.875rem;
+  --scifi-radius-pill: 999px;
+  --scifi-font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --scifi-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="ghibli"],
+[data-theme="ghibli"] {
+
+  --scifi-bg: #f4ecd8;
+  --scifi-surface: rgba(255, 248, 231, 0.75);
+  --scifi-surface-solid: #fff8e7;
+  --scifi-surface-hover: rgba(245, 235, 212, 0.85);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(255, 248, 231, 0.85), rgba(240, 230, 205, 0.9));
+  /* Ghibli palette: forest green + sky blue + sunset gold — as rich as retrowave's neon trio */
+  --scifi-primary: #4a8b6f;
+  --scifi-secondary: #6ba3d6;
+  --scifi-cyan: #d6a13a;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.28);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.28);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.28);
+  --scifi-text: #3a3326;
+  --scifi-muted: #a89a7a;
+  --scifi-success: #4a8b6f;
+  --scifi-warning: #b5651d;
+  --scifi-error: #c0392b;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.45);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.22);
+  /* Soft warm glows — present, not neon, so Ghibli feels alive like Retrowave */
+  --scifi-glow: 0 0 18px rgba(var(--scifi-primary-rgb), 0.22);
+  --scifi-glow-text: 0 0 8px rgba(var(--scifi-primary-rgb), 0.16);
+  --scifi-gradient-spectrum: linear-gradient(90deg, #4a8b6f 0%, #6ba3d6 25%, #d6a13a 50%, #6ba3d6 75%, #4a8b6f 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 74, 139, 111;
+  --scifi-secondary-rgb: 107, 163, 214;
+  --scifi-cyan-rgb: 214, 161, 58;
+  --scifi-muted-rgb: 168, 154, 122;
+  --scifi-error-rgb: 192, 57, 43;
+  --scifi-success-rgb: 74, 139, 111;
+  --scifi-warning-rgb: 181, 101, 29;
+  /* Semantic surface layers (rgb) — warm creams for the light theme */
+  --scifi-surface-1-rgb: 255, 248, 231;
+  --scifi-surface-2-rgb: 240, 230, 205;
+  --scifi-bg-deep-rgb: 250, 244, 228;
+  --scifi-active-text: #2d4a3c;
+  --scifi-shadow-rgb: 90, 70, 40;
+  --scifi-backdrop-rgb: 60, 50, 30;
+}
+
+:root[data-theme="fiesta"],
+[data-theme="fiesta"] {
+
+  --scifi-bg: #1a0b3d;
+  --scifi-surface: rgba(45, 27, 85, 0.65);
+  --scifi-surface-solid: #2d1b55;
+  --scifi-surface-hover: rgba(61, 39, 105, 0.75);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(45, 27, 85, 0.8), rgba(26, 11, 61, 0.9));
+  /* Fiesta: pink-led but warmed by orange + gold, cooled by azure + violet.
+     Distinct from Retrowave's pink/purple/cyan-on-black: deep indigo bg,
+     pink→orange gradients (sunset/fiesta), and a full 5-color spectrum. */
+  --scifi-primary: #ff006e;
+  --scifi-secondary: #fb5607;
+  --scifi-cyan: #3a86ff;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.42);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.42);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.42);
+  --scifi-text: #f5f0ff;
+  --scifi-muted: #8a7ab8;
+  --scifi-success: #ffbe0b;
+  --scifi-warning: #fb5607;
+  --scifi-error: #ff006e;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.3);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.32);
+  --scifi-glow: 0 0 22px var(--scifi-primary-glow);
+  --scifi-glow-text: 0 0 10px var(--scifi-primary-glow);
+  /* Full 5-color fiesta rainbow for hero/brand: gold→orange→pink→violet→azure */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ffbe0b 0%, #fb5607 25%, #ff006e 50%, #8338ec 75%, #3a86ff 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 0, 110;
+  --scifi-secondary-rgb: 131, 56, 236;
+  --scifi-cyan-rgb: 58, 134, 255;
+  --scifi-muted-rgb: 138, 122, 184;
+  --scifi-error-rgb: 255, 0, 110;
+  --scifi-success-rgb: 255, 190, 11;
+  --scifi-warning-rgb: 251, 86, 7;
+  /* Semantic surface layers (rgb) — deep indigo, not near-black */
+  --scifi-surface-1-rgb: 45, 27, 85;
+  --scifi-surface-2-rgb: 22, 11, 42;
+  --scifi-bg-deep-rgb: 26, 11, 61;
+  --scifi-active-text: #ffffff;
+  --scifi-shadow-rgb: 10, 0, 30;
+  --scifi-backdrop-rgb: 10, 0, 30;
+}
+
+:root[data-theme="dawn"],
+[data-theme="dawn"] {
+
+  --scifi-bg: #e9eef6;
+  --scifi-surface: rgba(247, 243, 251, 0.75);
+  --scifi-surface-solid: #f7f3fb;
+  --scifi-surface-hover: rgba(237, 230, 244, 0.85);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(247, 243, 251, 0.85), rgba(232, 238, 246, 0.9));
+  /* Dawn: coral rising sun + dawn blue + golden light on a cool pale sky.
+     Distinct from Ghibli's earthy forest: cooler lavender-blue bg, warm coral
+     accent, and a soft peach→blue→violet horizon gradient. */
+  --scifi-primary: #ff7e6b;
+  --scifi-secondary: #6b8fd6;
+  --scifi-cyan: #d4a017;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.28);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.28);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.28);
+  --scifi-text: #2f3340;
+  --scifi-muted: #a59ac4;
+  --scifi-success: #5a8f7b;
+  --scifi-warning: #d4a017;
+  --scifi-error: #c0392b;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.4);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.22);
+  /* Soft first-light glows — gentle, like morning mist catching the sun */
+  --scifi-glow: 0 0 18px rgba(var(--scifi-primary-rgb), 0.22);
+  --scifi-glow-text: 0 0 8px rgba(var(--scifi-primary-rgb), 0.16);
+  /* Dawn horizon: peach coral → dawn blue → soft violet */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ff7e6b 0%, #d4a017 25%, #6b8fd6 50%, #8b6fb5 75%, #ff7e6b 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 126, 107;
+  --scifi-secondary-rgb: 107, 143, 214;
+  --scifi-cyan-rgb: 212, 160, 23;
+  --scifi-muted-rgb: 165, 154, 196;
+  --scifi-error-rgb: 192, 57, 43;
+  --scifi-success-rgb: 90, 143, 123;
+  --scifi-warning-rgb: 212, 160, 23;
+  /* Semantic surface layers (rgb) — cool pale dawn sky */
+  --scifi-surface-1-rgb: 247, 243, 251;
+  --scifi-surface-2-rgb: 232, 238, 246;
+  --scifi-bg-deep-rgb: 233, 238, 246;
+  --scifi-active-text: #2f3340;
+  --scifi-shadow-rgb: 90, 80, 110;
+  --scifi-backdrop-rgb: 70, 60, 90;
+}
+
+:root[data-theme="synthwave84"],
+[data-theme="synthwave84"] {
+
+  --scifi-bg: #1a1126;
+  --scifi-surface: rgba(var(--scifi-surface-1-rgb), 0.65);
+  --scifi-surface-solid: #34294f;
+  --scifi-surface-hover: rgba(60, 47, 92, 0.75);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(var(--scifi-surface-1-rgb), 0.8), rgba(var(--scifi-surface-2-rgb), 0.9));
+  /* Synthwave '84: signature hot pink + cyan neon on a deep plum backdrop,
+     warmed by golden-sun yellow. Distinct from Retrowave's near-black bg and
+     Fiesta's indigo — this is the classic '84 plum with softer, rounder neons. */
+  --scifi-primary: #ff7edb;
+  --scifi-secondary: #36f9f6;
+  --scifi-cyan: #fede5d;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.42);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.42);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.42);
+  --scifi-text: #fefefe;
+  --scifi-muted: #848bbd;
+  --scifi-success: #36f9f6;
+  --scifi-warning: #fede5d;
+  --scifi-error: #ff7edb;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.3);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.3);
+  --scifi-glow: 0 0 22px var(--scifi-primary-glow);
+  --scifi-glow-text: 0 0 10px var(--scifi-primary-glow);
+  /* Synthwave horizon: golden sun → hot pink → cyan neon */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #fede5d 0%, #ff7edb 33%, #f92aad 50%, #36f9f6 75%, #ff7edb 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 126, 219;
+  --scifi-secondary-rgb: 54, 249, 246;
+  --scifi-cyan-rgb: 254, 222, 93;
+  --scifi-muted-rgb: 132, 139, 189;
+  --scifi-error-rgb: 255, 126, 219;
+  --scifi-success-rgb: 54, 249, 246;
+  --scifi-warning-rgb: 254, 222, 93;
+  /* Semantic surface layers (rgb) — deep plum, not near-black */
+  --scifi-surface-1-rgb: 52, 41, 79;
+  --scifi-surface-2-rgb: 36, 27, 51;
+  --scifi-bg-deep-rgb: 26, 17, 38;
+  --scifi-active-text: #ffffff;
+  --scifi-shadow-rgb: 15, 5, 25;
+  --scifi-backdrop-rgb: 15, 5, 25;
+}
+
+:root[data-theme="solarizedDark"],
+[data-theme="solarizedDark"] {
+
+  --scifi-bg: #002b36;
+  --scifi-surface: rgba(var(--scifi-surface-1-rgb), 0.65);
+  --scifi-surface-solid: #073642;
+  --scifi-surface-hover: rgba(14, 68, 83, 0.75);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(var(--scifi-surface-1-rgb), 0.8), rgba(var(--scifi-surface-2-rgb), 0.9));
+  /* Solarized Dark: the canonical Ethan Schoonover palette — base03 deep teal
+     bg, blue accent, with the measured, low-contrast syntax colors that made
+     Solarized the standard for long coding sessions. Deliberately calmer than
+     the neon themes; glows are subtle so the palette reads as designed. */
+  --scifi-primary: #268bd2;
+  --scifi-secondary: #2aa198;
+  --scifi-cyan: #b58900;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.3);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.3);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.3);
+  --scifi-text: #93a1a1;
+  --scifi-muted: #586e75;
+  --scifi-success: #859900;
+  --scifi-warning: #b58900;
+  --scifi-error: #dc322f;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.35);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.25);
+  --scifi-glow: 0 0 16px rgba(var(--scifi-primary-rgb), 0.2);
+  --scifi-glow-text: 0 0 8px rgba(var(--scifi-primary-rgb), 0.14);
+  /* Solarized spectrum: blue → cyan → yellow → orange → magenta (the 5 accents) */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #268bd2 0%, #2aa198 25%, #b58900 50%, #cb4b16 75%, #d33682 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 38, 139, 210;
+  --scifi-secondary-rgb: 42, 161, 152;
+  --scifi-cyan-rgb: 181, 137, 0;
+  --scifi-muted-rgb: 88, 110, 117;
+  --scifi-error-rgb: 220, 50, 47;
+  --scifi-success-rgb: 133, 153, 0;
+  --scifi-warning-rgb: 181, 137, 0;
+  /* Semantic surface layers (rgb) — base02/base03 teal */
+  --scifi-surface-1-rgb: 7, 54, 66;
+  --scifi-surface-2-rgb: 0, 43, 54;
+  --scifi-bg-deep-rgb: 0, 36, 46;
+  --scifi-active-text: #fdf6e3;
+  --scifi-shadow-rgb: 0, 20, 28;
+  --scifi-backdrop-rgb: 0, 20, 28;
+}
+
+:root[data-theme="cottonCandy"],
+[data-theme="cottonCandy"] {
+
+  --scifi-bg: #fbdce2;
+  --scifi-surface: rgba(255, 245, 248, 0.75);
+  --scifi-surface-solid: #fff5f8;
+  --scifi-surface-hover: rgba(255, 235, 242, 0.85);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(255, 245, 248, 0.85), rgba(251, 220, 226, 0.9));
+  /* Cotton Candy: blushing pink swirls with sky blue and mint under a joyful
+     carnival sky. A light, dreamy confection — pink-led, cooled by aqua blue
+     and ocean mint, warmed by a soft carnival-amber. Distinct from Dawn's cool
+     lavender and Ghibli's earthy forest: this is pure spun-sugar pastel. */
+  --scifi-primary: #ff9fb2;
+  --scifi-secondary: #0acdff;
+  --scifi-cyan: #60ab9a;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.28);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.28);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.28);
+  --scifi-text: #4a3b4a;
+  --scifi-muted: #b0a0b0;
+  --scifi-success: #60ab9a;
+  --scifi-warning: #f4a261;
+  --scifi-error: #e8647a;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.4);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.22);
+  /* Soft sugar-spun glows — gentle, like cotton candy catching the light */
+  --scifi-glow: 0 0 18px rgba(var(--scifi-primary-rgb), 0.22);
+  --scifi-glow-text: 0 0 8px rgba(var(--scifi-primary-rgb), 0.16);
+  /* Cotton candy swirl: pink → sky aqua → ocean mint → sky aqua → pink */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ff9fb2 0%, #0acdff 25%, #60ab9a 50%, #0acdff 75%, #ff9fb2 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 159, 178;
+  --scifi-secondary-rgb: 10, 205, 255;
+  --scifi-cyan-rgb: 96, 171, 154;
+  --scifi-muted-rgb: 176, 160, 176;
+  --scifi-error-rgb: 232, 100, 122;
+  --scifi-success-rgb: 96, 171, 154;
+  --scifi-warning-rgb: 244, 162, 97;
+  /* Semantic surface layers (rgb) — pale blush clouds + frost */
+  --scifi-surface-1-rgb: 255, 245, 248;
+  --scifi-surface-2-rgb: 251, 220, 226;
+  --scifi-bg-deep-rgb: 251, 220, 226;
+  --scifi-active-text: #4a3b4a;
+  --scifi-shadow-rgb: 120, 90, 110;
+  --scifi-backdrop-rgb: 100, 70, 90;
+}
+
+:root[data-theme="goldenTwilight"],
+[data-theme="goldenTwilight"] {
+
+  --scifi-bg: #000814;
+  --scifi-surface: rgba(var(--scifi-surface-1-rgb), 0.65);
+  --scifi-surface-solid: #001d3d;
+  --scifi-surface-hover: rgba(0, 40, 80, 0.75);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(var(--scifi-surface-1-rgb), 0.8), rgba(var(--scifi-surface-2-rgb), 0.9));
+  /* Golden Twilight: midnight navy and sapphire set off sparkling yellows —
+     the intrigue of nightfall's gold. Distinct from Retrowave's neon pink-on-
+     black and Fiesta's indigo: pure navy depths with two gold accents (school-
+     bus yellow + radiant gold) and a cool sapphire secondary. Glows are warm
+     gold against the deep blue, like lanterns at dusk. */
+  --scifi-primary: #ffd60a;
+  --scifi-secondary: #003566;
+  --scifi-cyan: #ffc300;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.42);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.42);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.42);
+  --scifi-text: #f0e8c8;
+  --scifi-muted: #5a7a9a;
+  --scifi-success: #60ab9a;
+  --scifi-warning: #ffc300;
+  --scifi-error: #ff5555;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.3);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.3);
+  /* Warm gold glow against the deep navy — lanterns at twilight */
+  --scifi-glow: 0 0 22px var(--scifi-primary-glow);
+  --scifi-glow-text: 0 0 10px var(--scifi-primary-glow);
+  /* Twilight spectrum: gold → school-bus yellow → oxford navy → prussian blue → gold */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ffd60a 0%, #ffc300 25%, #003566 50%, #001d3d 75%, #ffd60a 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 255, 214, 10;
+  --scifi-secondary-rgb: 0, 53, 102;
+  --scifi-cyan-rgb: 255, 195, 0;
+  --scifi-muted-rgb: 90, 122, 154;
+  --scifi-error-rgb: 255, 85, 85;
+  --scifi-success-rgb: 96, 171, 154;
+  --scifi-warning-rgb: 255, 195, 0;
+  /* Semantic surface layers (rgb) — prussian/oxford navy */
+  --scifi-surface-1-rgb: 0, 29, 61;
+  --scifi-surface-2-rgb: 0, 8, 20;
+  --scifi-bg-deep-rgb: 0, 8, 20;
+  --scifi-active-text: #ffffff;
+  --scifi-shadow-rgb: 0, 5, 15;
+  --scifi-backdrop-rgb: 0, 5, 15;
+}
+
+:root[data-theme="brightContrasts"],
+[data-theme="brightContrasts"] {
+
+  --scifi-bg: #f8ffe5;
+  --scifi-surface: rgba(255, 255, 255, 0.75);
+  --scifi-surface-solid: #ffffff;
+  --scifi-surface-hover: rgba(248, 255, 229, 0.9);
+  --scifi-surface-glass: linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(248, 255, 229, 0.9));
+  /* Bright Contrasts: lemon yellow, lively teal, rich blue, vibrant pink, and
+     bold gold — joyous, energetic moods. A light, high-energy theme led by
+     bubblegum pink, cooled by emerald + pacific cyan, warmed by school-bus
+     yellow. Distinct from Cotton Candy's dreamy pastels: this is saturated,
+     punchy, and unapologetically bold. */
+  --scifi-primary: #ef476f;
+  --scifi-secondary: #1b9aaa;
+  --scifi-cyan: #06d6a0;
+  --scifi-primary-glow: rgba(var(--scifi-primary-rgb), 0.3);
+  --scifi-cyan-glow: rgba(var(--scifi-cyan-rgb), 0.3);
+  --scifi-secondary-glow: rgba(var(--scifi-secondary-rgb), 0.3);
+  --scifi-text: #2d3a2d;
+  --scifi-muted: #8a9a8a;
+  --scifi-success: #06d6a0;
+  --scifi-warning: #ffc43d;
+  --scifi-error: #ef476f;
+  --scifi-border: rgba(var(--scifi-muted-rgb), 0.4);
+  --scifi-border-accent: rgba(var(--scifi-primary-rgb), 0.4);
+  --scifi-selection: rgba(var(--scifi-primary-rgb), 0.22);
+  /* Bright but soft glows — energetic, not neon */
+  --scifi-glow: 0 0 18px rgba(var(--scifi-primary-rgb), 0.22);
+  --scifi-glow-text: 0 0 8px rgba(var(--scifi-primary-rgb), 0.16);
+  /* Joyous spectrum: pink → pacific cyan → emerald → school-bus yellow → pink */
+  --scifi-gradient-spectrum: linear-gradient(90deg, #ef476f 0%, #1b9aaa 25%, #06d6a0 50%, #ffc43d 75%, #ef476f 100%);
+
+  /* RGB channels for rgba() tints */
+  --scifi-primary-rgb: 239, 71, 111;
+  --scifi-secondary-rgb: 27, 154, 170;
+  --scifi-cyan-rgb: 6, 214, 160;
+  --scifi-muted-rgb: 138, 154, 138;
+  --scifi-error-rgb: 239, 71, 111;
+  --scifi-success-rgb: 6, 214, 160;
+  --scifi-warning-rgb: 255, 196, 61;
+  /* Semantic surface layers (rgb) — pale lemon + white */
+  --scifi-surface-1-rgb: 255, 255, 255;
+  --scifi-surface-2-rgb: 248, 255, 229;
+  --scifi-bg-deep-rgb: 248, 255, 229;
+  --scifi-active-text: #2d3a2d;
+  --scifi-shadow-rgb: 90, 100, 80;
+  --scifi-backdrop-rgb: 70, 80, 60;
+}
+

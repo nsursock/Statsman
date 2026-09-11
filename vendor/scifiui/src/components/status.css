@@ -1,0 +1,47 @@
+@layer components {
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 1.65rem;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--scifi-muted);
+    background: linear-gradient(
+      180deg,
+      rgba(var(--scifi-surface-2-rgb), 0.95),
+      rgba(var(--scifi-bg-deep-rgb), 0.98)
+    );
+    border-top: 1px solid var(--scifi-border);
+    z-index: 20;
+  }
+
+  .status-bar-section {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .status-bar-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 24rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .status-bar-item strong {
+    color: var(--scifi-text);
+    font-weight: 600;
+  }
+
+  .status-bar .status-chip {
+    padding: 0.08rem 0.45rem;
+    font-size: 0.625rem;
+  }
+}

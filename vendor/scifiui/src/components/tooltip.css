@@ -1,0 +1,71 @@
+@layer components {
+  .tooltip {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tooltip::after {
+    content: attr(data-tip);
+    position: absolute;
+    z-index: 90;
+    padding: 0.28rem 0.55rem;
+    border-radius: var(--scifi-radius);
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-surface-1-rgb), 0.96);
+    color: var(--scifi-text);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.12s, transform 0.12s;
+    box-shadow: 0 8px 20px -8px rgba(var(--scifi-shadow-rgb), 0.55);
+  }
+  .tooltip:hover::after,
+  .tooltip:focus-within::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .tooltip-right::after {
+    left: calc(100% + 0.45rem);
+    top: 50%;
+    transform: translateY(-50%) translateX(-2px);
+  }
+  .tooltip-right:hover::after,
+  .tooltip-right:focus-within::after {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .tooltip-left::after {
+    right: calc(100% + 0.45rem);
+    top: 50%;
+    transform: translateY(-50%) translateX(2px);
+  }
+  .tooltip-left:hover::after,
+  .tooltip-left:focus-within::after {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .tooltip-bottom::after {
+    top: calc(100% + 0.4rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  .tooltip-bottom:hover::after,
+  .tooltip-bottom:focus-within::after {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .tooltip-top::after {
+    bottom: calc(100% + 0.4rem);
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(2px);
+  }
+  .tooltip-top:hover::after,
+  .tooltip-top:focus-within::after {
+    transform: translateX(-50%) translateY(0);
+  }
+}

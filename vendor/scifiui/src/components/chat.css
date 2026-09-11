@@ -1,0 +1,99 @@
+@layer components {
+  .chat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .chat-row {
+    display: flex;
+    gap: 0.55rem;
+    max-width: 92%;
+    min-width: 0;
+  }
+  .chat-start {
+    align-self: flex-start;
+    flex-direction: row;
+  }
+  .chat-end {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+
+  .chat-avatar {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-surface-1-rgb), 0.8);
+    color: var(--scifi-primary);
+  }
+  .chat-avatar svg {
+    display: block;
+  }
+
+  .chat-bubble {
+    position: relative;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid var(--scifi-border);
+    background: linear-gradient(
+      160deg,
+      rgba(var(--scifi-surface-1-rgb), 0.75),
+      rgba(var(--scifi-surface-2-rgb), 0.88)
+    );
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--scifi-text);
+    box-shadow: 0 6px 18px -10px rgba(var(--scifi-shadow-rgb), 0.45);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .chat-bubble-primary {
+    border-color: rgba(var(--scifi-primary-rgb), 0.4);
+    background: linear-gradient(
+      160deg,
+      rgba(var(--scifi-primary-rgb), 0.18),
+      rgba(var(--scifi-surface-1-rgb), 0.85)
+    );
+  }
+  .chat-bubble-accent {
+    border-color: rgba(var(--scifi-cyan-rgb), 0.4);
+    background: linear-gradient(
+      160deg,
+      rgba(var(--scifi-cyan-rgb), 0.12),
+      rgba(var(--scifi-surface-1-rgb), 0.85)
+    );
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--scifi-muted);
+  }
+  .chat-header .chat-name {
+    color: var(--scifi-primary);
+    font-weight: 700;
+  }
+
+  .chat-footer {
+    margin-top: 0.25rem;
+    font-size: 0.625rem;
+    color: var(--scifi-muted);
+  }
+}

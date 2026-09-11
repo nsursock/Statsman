@@ -1,0 +1,30 @@
+services:
+  statsman:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      STATSMAN_MODE: selfhost
+      DATABASE_PATH: /data/statsman.db
+      PUBLIC_ORIGIN: http://localhost:3000
+      # Optional lock for /dashboard
+      # ADMIN_TOKEN: change-me
+      SESSION_SECRET: change-me-in-production
+    volumes:
+      - statsman-data:/data
+    restart: unless-stopped
+
+  # Optional Postgres for cloud-style deploys:
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: statsman
+  #     POSTGRES_PASSWORD: statsman
+  #     POSTGRES_DB: statsman
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  statsman-data:

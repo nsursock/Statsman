@@ -1,0 +1,71 @@
+@layer components {
+  .drawer {
+    position: relative;
+    display: grid;
+    grid-template-columns: 0fr 1fr;
+    width: 100%;
+    min-height: 100%;
+    overflow: hidden;
+  }
+  .drawer.open {
+    grid-template-columns: auto 1fr;
+  }
+
+  .drawer-side {
+    overflow: hidden;
+    width: 0;
+    min-width: 0;
+    transition: width 0.25s var(--scifi-ease);
+    z-index: 40;
+  }
+  .drawer.open > .drawer-side {
+    width: min(18rem, 85vw);
+  }
+
+  .drawer-panel {
+    height: 100%;
+    overflow: auto;
+    background: linear-gradient(
+      180deg,
+      rgba(var(--scifi-surface-1-rgb), 0.95),
+      rgba(var(--scifi-surface-2-rgb), 0.98)
+    );
+    border-right: 1px solid var(--scifi-border);
+    box-shadow: 8px 0 28px -16px rgba(var(--scifi-shadow-rgb), 0.55);
+  }
+
+  .drawer-content {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(var(--scifi-backdrop-rgb), 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: none;
+  }
+  .drawer.open > .drawer-backdrop,
+  .drawer-backdrop.open {
+    display: block;
+  }
+
+  .drawer-end {
+    grid-template-columns: 1fr 0fr;
+  }
+  .drawer-end.open {
+    grid-template-columns: 1fr auto;
+  }
+  .drawer-end > .drawer-side {
+    order: 2;
+  }
+  .drawer-end.open > .drawer-side .drawer-panel,
+  .drawer-end > .drawer-side .drawer-panel {
+    border-right: none;
+    border-left: 1px solid var(--scifi-border);
+    box-shadow: -8px 0 28px -16px rgba(var(--scifi-shadow-rgb), 0.55);
+  }
+}

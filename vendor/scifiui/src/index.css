@@ -1,0 +1,10 @@
+/* @scifiui/core — full kit (tokens + base + components)
+   Use with Tailwind v4:
+
+   @import "tailwindcss";
+   @plugin "@scifiui/core";
+   @import "@scifiui/core/index.css";
+*/
+@import "./themes.css";
+@import "./base.css";
+@import "./components.css";

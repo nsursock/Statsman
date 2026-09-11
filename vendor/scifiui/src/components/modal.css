@@ -1,0 +1,47 @@
+@layer components {
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(var(--scifi-backdrop-rgb), 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modal {
+    position: relative;
+    width: 100%;
+    max-width: 28rem;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(
+      165deg,
+      rgba(var(--scifi-surface-1-rgb), 0.95),
+      rgba(var(--scifi-surface-2-rgb), 0.98)
+    );
+    border: 1px solid var(--scifi-border-accent);
+    box-shadow: 0 16px 48px -12px rgba(var(--scifi-shadow-rgb), 0.65);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .modal-title {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+  }
+  .modal-body {
+    font-size: 0.8125rem;
+    color: var(--scifi-muted);
+    margin-bottom: 1rem;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+}

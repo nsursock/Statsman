@@ -1,0 +1,70 @@
+@layer components {
+  .toast {
+    position: fixed;
+    z-index: 220;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    pointer-events: none;
+    max-width: min(24rem, calc(100vw - 1.5rem));
+  }
+  .toast-top {
+    top: 0.75rem;
+  }
+  .toast-bottom {
+    bottom: 0.75rem;
+  }
+  .toast-start {
+    left: 0.75rem;
+  }
+  .toast-end {
+    right: 0.75rem;
+  }
+  .toast-center {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .toast-item {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--scifi-border);
+    background: linear-gradient(
+      160deg,
+      rgba(var(--scifi-surface-1-rgb), 0.94),
+      rgba(var(--scifi-surface-2-rgb), 0.97)
+    );
+    box-shadow: 0 12px 32px -12px rgba(var(--scifi-shadow-rgb), 0.6);
+    font-size: 0.78125rem;
+    color: var(--scifi-text);
+    animation: scifi-toast-in 0.28s var(--scifi-ease);
+  }
+  .toast-item.toast-success {
+    border-color: rgba(var(--scifi-success-rgb), 0.45);
+  }
+  .toast-item.toast-warning {
+    border-color: rgba(var(--scifi-warning-rgb), 0.5);
+  }
+  .toast-item.toast-error {
+    border-color: rgba(var(--scifi-error-rgb), 0.5);
+  }
+  .toast-item.toast-info {
+    border-color: rgba(var(--scifi-cyan-rgb), 0.45);
+  }
+
+  @keyframes scifi-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

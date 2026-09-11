@@ -1,0 +1,157 @@
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--scifi-radius);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--scifi-border);
+    background: var(--scifi-surface);
+    color: var(--scifi-text);
+    transition: all 0.2s var(--scifi-ease);
+  }
+  .btn:hover {
+    border-color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+    transform: translateY(-1px);
+  }
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .btn-xs {
+    padding: 0.125rem 0.35rem;
+    font-size: 0.6875rem;
+  }
+  .btn-ghost {
+    border-color: transparent;
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    background: rgba(var(--scifi-primary-rgb), 0.08);
+    border-color: var(--scifi-border-accent);
+  }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--scifi-primary), var(--scifi-secondary));
+    color: var(--scifi-bg);
+    border-color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+    font-weight: 600;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 24px var(--scifi-primary-glow);
+  }
+  .btn-danger {
+    background: linear-gradient(135deg, rgba(var(--scifi-error-rgb), 0.9), rgba(200, 40, 40, 0.9));
+    color: #fff;
+    border: 1px solid rgba(var(--scifi-error-rgb), 0.5);
+    font-weight: 700;
+  }
+  .btn-danger:hover:not(:disabled) {
+    filter: brightness(1.15);
+    box-shadow: 0 0 16px rgba(var(--scifi-error-rgb), 0.4);
+  }
+
+  .btn-cta,
+  .cta-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--scifi-bg);
+    background: linear-gradient(120deg, var(--scifi-primary), var(--scifi-secondary));
+    border: 1px solid var(--scifi-primary);
+    box-shadow:
+      0 0 24px var(--scifi-primary-glow),
+      0 8px 24px -8px rgba(var(--scifi-primary-rgb), 0.6);
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+    overflow: hidden;
+  }
+  .btn-cta::after,
+  .cta-primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s;
+  }
+  .btn-cta:hover::after,
+  .cta-primary:hover::after {
+    left: 130%;
+  }
+  .btn-cta:hover,
+  .cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 32px var(--scifi-primary-glow),
+      0 12px 32px -8px rgba(var(--scifi-primary-rgb), 0.7);
+    filter: brightness(1.05);
+  }
+  .btn-cta:active,
+  .cta-primary:active {
+    transform: translateY(0);
+  }
+  .btn-cta:disabled,
+  .cta-primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+    box-shadow: none;
+  }
+  .btn-cta:disabled::after,
+  .cta-primary:disabled::after {
+    display: none;
+  }
+
+  .icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.4);
+    color: var(--scifi-text);
+    cursor: pointer;
+    transition: all 0.2s var(--scifi-ease);
+    opacity: 0.8;
+  }
+  .icon-btn:hover {
+    opacity: 1;
+    border-color: var(--scifi-primary);
+    background: var(--scifi-surface);
+    color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+    transform: translateY(-1px);
+  }
+  .icon-btn.active {
+    opacity: 1;
+    color: var(--scifi-primary);
+    border-color: var(--scifi-primary);
+    background: rgba(var(--scifi-primary-rgb), 0.12);
+    box-shadow: var(--scifi-glow);
+  }
+}

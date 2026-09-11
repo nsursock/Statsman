@@ -1,0 +1,113 @@
+@layer components {
+  .mask {
+    display: inline-block;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+  .mask-circle {
+    -webkit-mask-image: radial-gradient(circle, #000 66%, transparent 67%);
+    mask-image: radial-gradient(circle, #000 66%, transparent 67%);
+  }
+  .mask-squircle {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path fill='black' d='M100 0C42 0 0 42 0 100s42 100 100 100 100-42 100-100S158 0 100 0Z'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path fill='black' d='M100 0C42 0 0 42 0 100s42 100 100 100 100-42 100-100S158 0 100 0Z'/></svg>");
+  }
+  .mask-hexagon {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><polygon fill='black' points='100,8 184,54 184,146 100,192 16,146 16,54'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><polygon fill='black' points='100,8 184,54 184,146 100,192 16,146 16,54'/></svg>");
+  }
+
+  .carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    gap: 0.75rem;
+    padding-bottom: 0.35rem;
+  }
+  .carousel-item {
+    flex: none;
+    scroll-snap-align: start;
+  }
+  .carousel-center .carousel-item {
+    scroll-snap-align: center;
+  }
+  .carousel::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .popover {
+    position: relative;
+    display: inline-flex;
+  }
+  .popover-content {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    left: 50%;
+    z-index: 30;
+    min-width: 12rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--scifi-radius);
+    border: 1px solid var(--scifi-border);
+    background: linear-gradient(
+      165deg,
+      rgba(var(--scifi-surface-1-rgb), 0.95),
+      rgba(var(--scifi-surface-2-rgb), 0.98)
+    );
+    box-shadow: 0 16px 40px -12px rgba(var(--scifi-shadow-rgb), 0.55), var(--scifi-glow);
+    color: var(--scifi-text);
+    font-size: 0.8125rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, 0.25rem);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    pointer-events: none;
+  }
+  .popover:hover > .popover-content,
+  .popover:focus-within > .popover-content,
+  .popover.open > .popover-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+  }
+
+  .diff {
+    position: relative;
+    display: grid;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--scifi-radius-lg);
+    border: 1px solid var(--scifi-border);
+    container-type: inline-size;
+  }
+  .diff-item-1,
+  .diff-item-2 {
+    grid-area: 1 / 1;
+  }
+  .diff-item-1 {
+    overflow: hidden;
+    width: 50%;
+    border-right: 1px solid var(--scifi-primary);
+    box-shadow: 0 0 20px rgba(var(--scifi-primary-rgb), 0.25);
+  }
+  .diff-item-1 > *,
+  .diff-item-2 > * {
+    display: block;
+    width: 100cqw;
+    max-width: none;
+  }
+  .diff-resizer {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: col-resize;
+    appearance: none;
+    background: transparent;
+  }
+}

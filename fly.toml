@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for statsman on 2026-09-11T16:53:27+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'statsman'
+primary_region = 'cdg'
+
+[build]
+[env]
+  STATSMAN_MODE = "selfhost"
+  PORT = "3000"
+  HOST = "0.0.0.0"
+  PUBLIC_ORIGIN = "https://statsman.fly.dev"
+  DATABASE_PATH = "/data/statsman.db"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = '512mb'
+  cpus = 1
+  memory_mb = 512
+
+[mounts]
+  source = "statsman_data"
+  destination = "/data"

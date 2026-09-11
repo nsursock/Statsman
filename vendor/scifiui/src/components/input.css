@@ -1,0 +1,219 @@
+@layer components {
+  .input,
+  .textarea,
+  .select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--scifi-radius);
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.6);
+    color: var(--scifi-text);
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: var(--scifi-font);
+  }
+  .input:focus,
+  .textarea:focus,
+  .select:focus {
+    border-color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+  }
+  .input::placeholder,
+  .textarea::placeholder {
+    color: var(--scifi-muted);
+  }
+  .textarea {
+    resize: vertical;
+    min-height: 5rem;
+  }
+  .select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a0a0b0' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    padding-right: 2rem;
+  }
+  .select option {
+    background: var(--scifi-surface-solid);
+    color: var(--scifi-text);
+  }
+
+  .checkbox {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 3px;
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.6);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.15s;
+  }
+  .checkbox:checked {
+    background: var(--scifi-primary);
+    border-color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+  }
+
+  .toggle {
+    appearance: none;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: var(--scifi-radius-pill);
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.6);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s var(--scifi-ease);
+    vertical-align: middle;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 999px;
+    background: var(--scifi-muted);
+    transition: transform 0.2s var(--scifi-ease), background 0.2s;
+  }
+  .toggle:checked {
+    background: rgba(var(--scifi-primary-rgb), 0.35);
+    border-color: var(--scifi-primary);
+  }
+  .toggle:checked::after {
+    transform: translateX(1rem);
+    background: var(--scifi-primary);
+    box-shadow: 0 0 8px var(--scifi-primary-glow);
+  }
+
+  .radio {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.6);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.15s;
+  }
+  .radio:checked {
+    border-color: var(--scifi-primary);
+    box-shadow: inset 0 0 0 3px var(--scifi-bg), inset 0 0 0 7px var(--scifi-primary),
+      var(--scifi-glow);
+  }
+
+  .range {
+    appearance: none;
+    width: 100%;
+    height: 0.35rem;
+    border-radius: var(--scifi-radius-pill);
+    background: rgba(var(--scifi-muted-rgb), 0.35);
+    outline: none;
+    cursor: pointer;
+  }
+  .range::-webkit-slider-thumb {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--scifi-primary);
+    border: 1px solid var(--scifi-primary);
+    box-shadow: 0 0 10px var(--scifi-primary-glow);
+    cursor: pointer;
+  }
+  .range::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--scifi-primary);
+    border: 1px solid var(--scifi-primary);
+    box-shadow: 0 0 10px var(--scifi-primary-glow);
+    cursor: pointer;
+  }
+
+  .file-input {
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--scifi-radius);
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-bg-deep-rgb), 0.6);
+    color: var(--scifi-text);
+    font-size: 0.8125rem;
+    font-family: var(--scifi-font);
+    cursor: pointer;
+  }
+  .file-input::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.5rem 0.85rem;
+    border: 0;
+    border-right: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-primary-rgb), 0.15);
+    color: var(--scifi-primary);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .file-input:focus {
+    outline: none;
+    border-color: var(--scifi-primary);
+    box-shadow: var(--scifi-glow);
+  }
+
+  .pin-input {
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+  .pin-input .input {
+    width: 2.5rem;
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--scifi-radius-lg);
+    border: 1px solid var(--scifi-border);
+    background: rgba(var(--scifi-surface-1-rgb), 0.35);
+  }
+  .fieldset-legend,
+  .fieldset legend {
+    padding: 0 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--scifi-primary);
+  }
+  .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--scifi-text);
+  }
+  .label-text {
+    color: var(--scifi-text);
+  }
+  .label-text-alt {
+    font-size: 0.6875rem;
+    color: var(--scifi-muted);
+  }
+}
