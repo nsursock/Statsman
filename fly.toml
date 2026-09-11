@@ -13,6 +13,8 @@ primary_region = 'cdg'
   HOST = "0.0.0.0"
   PUBLIC_ORIGIN = "https://statsman.fly.dev"
   DATABASE_PATH = "/data/statsman.db"
+  # Real visitor IP behind Fly’s proxy (needed for geoip country/city).
+  ADDRESS_HEADER = "fly-client-ip"
 
 [http_service]
   internal_port = 3000

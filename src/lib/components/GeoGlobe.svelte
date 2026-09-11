@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+	import { countryName } from '$lib/country-name';
 
 	type City = {
 		city: string;
@@ -214,7 +215,7 @@
 			const coords = `${c.lat.toFixed(2)}°, ${c.lng.toFixed(2)}°`;
 			hitSpheres.push({
 				mesh: core,
-				label: `${c.city}, ${c.country} · ${coords} · ${c.views.toLocaleString()}`
+				label: `${c.city} · ${countryName(c.country)} · ${coords} · ${c.views.toLocaleString()}`
 			});
 		}
 

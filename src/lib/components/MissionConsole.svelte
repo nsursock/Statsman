@@ -2,6 +2,7 @@
 	import StatCard from '$lib/components/StatCard.svelte';
 	import Sparkline from '$lib/components/Sparkline.svelte';
 	import GeoGlobe from '$lib/components/GeoGlobe.svelte';
+	import { countryName } from '$lib/country-name';
 	import { relTime } from '$lib/rel-time';
 
 	type RankStat = { label: string; views: number };
@@ -81,7 +82,7 @@
 	const maxEventViews = $derived(Math.max(1, ...stats.customEvents.map((r) => r.views), 1));
 
 	function techLine(e: EventRow): string {
-		const geo = [e.city, e.country].filter(Boolean).join(', ');
+		const geo = [e.city, e.country ? countryName(e.country) : null].filter(Boolean).join(', ');
 		return [e.browser, e.os, e.device, geo].filter(Boolean).join(' · ') || '—';
 	}
 
@@ -174,7 +175,7 @@
 						<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 						<div class="rank-main min-w-0">
 							<div class="flex justify-between gap-2 text-xs mb-1">
-								<span class="truncate">{row.label}</span>
+								<span class="truncate" title={row.label}>{countryName(row.label)}</span>
 								<span class="text-scifi-muted tabular-nums shrink-0"
 									>{row.views.toLocaleString()}</span
 								>
@@ -200,8 +201,8 @@
 							<div class="flex justify-between gap-2 text-xs mb-1">
 								<span
 									class="truncate"
-									title="{row.city}, {row.country} · {row.lat.toFixed(2)}°, {row.lng.toFixed(2)}°"
-									>{row.city}, {row.country}</span
+									title="{row.city} · {countryName(row.country)} · {row.lat.toFixed(2)}°, {row.lng.toFixed(2)}°"
+									>{row.city}</span
 								>
 								<span class="text-scifi-muted tabular-nums shrink-0"
 									>{row.views.toLocaleString()}</span

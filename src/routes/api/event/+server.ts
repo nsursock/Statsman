@@ -5,7 +5,7 @@ import { parseUserAgent } from '$lib/server/ua';
 import { hostsMatch, requestHost } from '$lib/server/domain';
 import { isCloud } from '$lib/server/config';
 import { planLimits } from '$lib/server/plans';
-import { geoFromHeaders } from '$lib/server/geo';
+import { geoFromHeaders, resolveClientIp } from '$lib/server/geo';
 import { parseDurationMs, serializeEventProps } from '$lib/server/event-props';
 
 const CORS = {
@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const ua = request.headers.get('user-agent') ?? '';
 	const { browser, os, device } = parseUserAgent(ua);
-	const ip = getClientAddress();
+	const ip = resolveClientIp(request, getClientAddress());
 	const daySalt = new Date().toISOString().slice(0, 10);
 	const geo = geoFromHeaders(request, ip);
 

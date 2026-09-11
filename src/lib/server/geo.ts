@@ -8,12 +8,42 @@ export type GeoLookup = {
 	lng: number | null;
 };
 
+function isNonPublicIp(ip: string): boolean {
+	const v = ip.replace(/^::ffff:/, '').toLowerCase();
+	if (!v || v === '127.0.0.1' || v === '::1' || v === '0.0.0.0') return true;
+	if (v.startsWith('10.') || v.startsWith('192.168.') || v.startsWith('169.254.')) return true;
+	if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(v)) return true;
+	// Fly private / IPv6 ULA
+	if (v.startsWith('fdaa:') || v.startsWith('fc') || v.startsWith('fd')) return true;
+	return false;
+}
+
+/**
+ * Prefer Fly / proxy client IP headers — `getClientAddress()` alone often returns
+ * the edge proxy on Fly unless ADDRESS_HEADER=fly-client-ip is set.
+ */
+export function resolveClientIp(request: Request, fallback: string): string {
+	const candidates = [
+		request.headers.get('fly-client-ip'),
+		request.headers.get('cf-connecting-ip'),
+		request.headers.get('true-client-ip'),
+		request.headers.get('x-real-ip'),
+		request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
+		fallback
+	];
+	for (const raw of candidates) {
+		if (!raw) continue;
+		const ip = raw.replace(/^::ffff:/, '').trim();
+		if (ip && !isNonPublicIp(ip)) return ip;
+	}
+	return fallback.replace(/^::ffff:/, '').trim();
+}
+
 /** Resolve country/city from IP. Never persist the IP — only these fields. */
 export function lookupGeo(ip: string | null | undefined): GeoLookup {
 	if (!ip) return { country: null, city: null, lat: null, lng: null };
 	const cleaned = ip.replace(/^::ffff:/, '').trim();
-	if (!cleaned || cleaned === '127.0.0.1' || cleaned === '::1' || cleaned === '0.0.0.0') {
-		// Localhost — treat as unknown (demo seed supplies coords explicitly).
+	if (isNonPublicIp(cleaned)) {
 		return { country: null, city: null, lat: null, lng: null };
 	}
 	try {
@@ -34,10 +64,16 @@ export function lookupGeo(ip: string | null | undefined): GeoLookup {
 /** Prefer Cloudflare / proxy country hint when geoip misses (still no raw IP stored). */
 export function geoFromHeaders(request: Request, ip: string): GeoLookup {
 	const fromIp = lookupGeo(ip);
-	const cf = request.headers.get('cf-ipcountry');
 	if (fromIp.country) return fromIp;
+
+	const cf = request.headers.get('cf-ipcountry');
 	if (cf && cf !== 'XX' && cf !== 'T1') {
-		return { country: cf.slice(0, 2).toUpperCase(), city: null, lat: null, lng: null };
+		return {
+			country: cf.slice(0, 2).toUpperCase(),
+			city: null,
+			lat: null,
+			lng: null
+		};
 	}
 	return fromIp;
 }
