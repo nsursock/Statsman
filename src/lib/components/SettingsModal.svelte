@@ -324,10 +324,17 @@
 										<pre class="snippet-code">{snippet}</pre>
 									</div>
 									<p class="text-sm text-scifi-muted m-0 mt-4 mb-2 leading-relaxed">
-										Custom events (optional) — after the snippet loads:
+										<strong class="text-[var(--scifi-text)] font-medium">Automatic</strong> (one
+										snippet): pageview, engagement, engaged_visit, route_change, outbound_link,
+										download, scroll_25/50/75/90. Meaningful behavior only — not every mouse move.
 									</p>
-									<pre class="snippet-code text-[0.7rem]">{`statsman.track('newsletter_click')
-statsman.track('signup', { plan: 'indie' })`}</pre>
+									<p class="text-sm text-scifi-muted m-0 mb-2 leading-relaxed">
+										<strong class="text-[var(--scifi-text)] font-medium">Custom</strong> — your
+										business events (no passwords/emails in props):
+									</p>
+									<pre class="snippet-code text-[0.7rem]">{`statsman.track('signup')
+statsman.track('newsletter_subscribe')
+statsman.track('purchase', { plan: 'indie' })`}</pre>
 									<p class="text-[0.65rem] text-scifi-muted mt-3 mb-0 font-mono">site · {site.id}</p>
 								{:else}
 									<div class="empty-pane">

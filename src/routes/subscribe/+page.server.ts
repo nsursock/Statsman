@@ -1,11 +1,14 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getStripeConfig, isCloud } from '$lib/server/config';
+import { getStripeConfig, isCloud, showMarketing } from '$lib/server/config';
 import { billingEnabled } from '$lib/server/stripe';
 import { PLANS } from '$lib/plans';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
-	if (!isCloud()) redirect(303, '/pricing');
+	if (!showMarketing() || !isCloud()) {
+		const authed = isCloud() ? Boolean(locals.user) : Boolean(locals.adminOk);
+		redirect(303, authed ? '/dashboard' : '/login');
+	}
 	if (!locals.user) {
 		const plan = url.searchParams.get('plan') === 'creator' ? 'creator' : 'indie';
 		redirect(303, `/login?mode=signup&next=${encodeURIComponent(`/subscribe?plan=${plan}`)}`);

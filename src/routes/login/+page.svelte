@@ -283,10 +283,12 @@
 			{/if}
 
 			<p class="mt-6 text-xs text-scifi-muted max-w-md">
-				<a href="/" class="text-scifi-cyan no-underline hover:text-scifi-primary">← Back to home</a>
 				{#if data.isCloud}
+					<a href="/" class="text-scifi-cyan no-underline hover:text-scifi-primary">← Back to home</a>
 					<span class="mx-2 opacity-40">·</span>
 					<a href="/pricing" class="no-underline hover:text-scifi-primary">Pricing</a>
+				{:else}
+					<span>Self-hosted Statsman · operator console</span>
 				{/if}
 			</p>
 		</section>

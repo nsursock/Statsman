@@ -88,6 +88,7 @@ export type StatsSummary = {
 	campaigns: RankStat[];
 	countries: RankStat[];
 	cities: GeoCityStat[];
+	/** Ranked event names excluding pageview/engagement (auto + custom). */
 	customEvents: RankStat[];
 	timeseries: { date: string; pageviews: number; visitors: number }[];
 };

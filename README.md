@@ -1,6 +1,6 @@
 # Statsman
 
-Privacy-first web analytics for indie blogs — **self-host free** or run the **managed cloud** with Stripe plans.
+Privacy-first web analytics for indie blogs — **self-host free** (Docker anywhere) or use the **managed cloud** on the main site.
 
 Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 
@@ -8,14 +8,25 @@ Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 ![ScifiUI](https://img.shields.io/badge/ScifiUI-vendored-ff2a6d)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## How it fits together
+
+| Deploy | Who | `STATSMAN_MODE` | What `/` does |
+| --- | --- | --- | --- |
+| **Main site** (Railway + Supabase) | Product marketing; your dashboard; later cloud customers | `hosted` → `cloud` when SaaS is live | Landing, pricing, product |
+| **Self-host** (any Docker host) | Anyone running their own instance | `selfhost` | Login → dashboard (no marketing) |
+
+**Self-host promise:** if it can run Docker, it can run Statsman. Pick Railway, Render, a VPS, Portainer, etc. Use a volume for SQLite or point `DATABASE_URL` at Postgres (e.g. Supabase).
+
+Same codebase. Cloud customers sign up on the main site. Self-host customers follow [`/self-host`](/self-host).
+
 ## Hybrid model
 
-| | Self-host (OSS) | Cloud (paid) |
+| | Self-host (OSS) | Cloud (on main site) |
 | --- | --- | --- |
-| Storage | SQLite volume | Postgres (`DATABASE_URL`) |
+| Storage | Docker volume (SQLite) or Postgres (`DATABASE_URL`) | Postgres (Supabase) |
 | Auth | Optional `ADMIN_TOKEN` | Magic-link email |
 | Limits | Your machine | Free / Indie $9 / Creator $19 |
-| Deploy | Fly / VPS / Docker (public URL) | Managed cloud |
+| Deploy | **Any Docker host** | Railway (app) + Supabase (DB) |
 
 ## Quick start (dev)
 
@@ -25,29 +36,34 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). Dashboard is open in self-host mode unless `ADMIN_TOKEN` is set.
+Open [http://localhost:5173](http://localhost:5173). For local marketing UI set `STATSMAN_MODE=hosted`. Pure app UX: `selfhost`.
 
 ## Self-host (production)
 
-Generic step-by-step: [`/self-host`](/self-host).
-
-**Recommended stack:** [Railway](https://railway.app) (app, Dockerfile) + [Supabase](https://supabase.com) (Postgres). Set `STATSMAN_MODE=selfhost`, `PUBLIC_ORIGIN`, `DATABASE_URL`, `ADMIN_TOKEN`, `SESSION_SECRET`.
-
-```html
-<script defer src="https://YOUR_APP.up.railway.app/tracker.js" data-site="SITE_ID"></script>
-```
-
-Paste into WordPress/Ghost custom code settings — or set `PUBLIC_ANALYTICS_ORIGIN` + `PUBLIC_ANALYTICS_SITE_ID` on a Statsman marketing deploy.
-
-> Vercel is a poor fit for this repo’s `adapter-node` server; use Railway/Fly/Render for the app. Supabase (or any Postgres) works for the database.
-
-### Docker (laptop or VPS)
+Step-by-step: [`/self-host`](/self-host).
 
 ```bash
 docker compose up -d --build
+# or deploy the Dockerfile on Railway / Render / your VPS
 ```
 
-On a VPS, set `PUBLIC_ORIGIN` to your public HTTPS URL (and optionally `DATABASE_URL` for Postgres). Locally: [http://localhost:3000](http://localhost:3000) — fine for UI, not for real traffic.
+```bash
+STATSMAN_MODE=selfhost
+PUBLIC_ORIGIN=https://YOUR_PUBLIC_HTTPS_URL
+# SQLite (volume) — or Postgres:
+# DATABASE_URL=postgres://...
+ADMIN_TOKEN=...
+SESSION_SECRET=...
+```
+
+```html
+<script defer src="https://YOUR_PUBLIC_HTTPS_URL/tracker.js" data-site="SITE_ID"></script>
+```
+
+Paste into WordPress/Ghost custom code settings.
+
+> Needs a long-running Node container (`adapter-node`). Typical Vercel serverless is a poor fit unless you change adapters. Any Postgres (Supabase, Neon, RDS, …) works via `DATABASE_URL`.
+
 ## Demo lab
 
 In `npm run dev`, a **Demo Site** is auto-created (domain `localhost`): the landing page tracks itself into it, and a fake blog lives at [`/demo`](http://localhost:5173/demo) — every click fires a real event. The demo site is backfilled with ~30 days of synthetic traffic so the dashboard looks alive on first boot.
@@ -57,23 +73,22 @@ In `npm run dev`, a **Demo Site** is auto-created (domain `localhost`): the land
 | `STATSMAN_DEMO` | on in dev, off in prod | Enable/disable `/demo` + dogfooding. Set `1` to ship the demo to prod, `0` to mute it in dev. |
 | `STATSMAN_DEMO_SEED` | on in dev, off in prod | Backfill synthetic demo traffic (no-op once the site is busy). |
 
-## Cloud mode
+## Cloud mode (main site)
+
+Run the commercial site on Railway with Supabase:
 
 ```bash
-STATSMAN_MODE=cloud
-PUBLIC_ORIGIN=https://your.domain
-DATABASE_URL=postgres://...
+STATSMAN_MODE=hosted   # or cloud when multi-user SaaS is live
+PUBLIC_ORIGIN=https://your-main-domain
+DATABASE_URL=postgres://...   # Supabase
 SESSION_SECRET=...
-RESEND_API_KEY=...
-STRIPE_SECRET_KEY=...
-STRIPE_WEBHOOK_SECRET=...
-STRIPE_PRICE_INDIE=price_...
-STRIPE_PRICE_CREATOR=price_...
-```
-
-```bash
-npm run build && npm start
-# or: fly deploy
+ADMIN_TOKEN=...               # until cloud magic-link is enabled
+# cloud extras when ready:
+# RESEND_API_KEY=...
+# STRIPE_SECRET_KEY=...
+# STRIPE_WEBHOOK_SECRET=...
+# STRIPE_PRICE_INDIE=price_...
+# STRIPE_PRICE_CREATOR=price_...
 ```
 
 Stripe webhook path: `POST /api/billing/webhook`.
@@ -93,7 +108,7 @@ Over-cap ingest returns `204` (blogs stay green); dashboard shows an upgrade ban
 
 ## Security
 
-- **Domain allowlist** on `/api/event` when `Origin` / `Referer` is present (site domain must match the blog host, e.g. `til-blog-kappa.vercel.app`)
+- **Domain allowlist** on `/api/event` when `Origin` / `Referer` is present (site domain must match the blog host)
 - **CSRF origin check disabled** for tracker beacons (`text/plain` cross-origin POSTs); allowlist above is the gate
 - **Site ownership** in cloud (users → sites)
 - **Optional `ADMIN_TOKEN`** locks self-host dashboard + site CRUD
@@ -105,16 +120,13 @@ Over-cap ingest returns `204` (blogs stay green); dashboard shows an upgrade ban
 - Vendored [`vendor/scifiui`](vendor/scifiui) (`@scifiui/core`)
 - GSAP helpers via ScifiUI · Three.js landing field
 - `better-sqlite3` / `postgres` · Stripe · Resend
+- Dockerfile + `docker-compose.yml`
 
 ## Dogfooding TilBlog
 
-Point production TilBlog at your cloud origin + site id:
-
 ```html
-<script defer src="https://YOUR_CLOUD/tracker.js" data-site="TILBLOG_SITE_ID"></script>
+<script defer src="https://YOUR_STATSMAN/tracker.js" data-site="TILBLOG_SITE_ID"></script>
 ```
-
-Local Eleventy can keep `http://localhost:5173` for the TILOCAL site.
 
 ## License
 

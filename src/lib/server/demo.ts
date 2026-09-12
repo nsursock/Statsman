@@ -168,12 +168,15 @@ const GEO: [{ country: string; city: string; lat: number; lng: number }, number]
 	[{ country: 'KR', city: 'Seoul', lat: 37.57, lng: 126.98 }, 5]
 ];
 
-const CUSTOM_EVENTS: [string, number][] = [
-	['outbound_link', 18],
-	['newsletter_click', 12],
-	['copy_code', 9],
-	['theme_toggle', 7]
-];
+	const CUSTOM_EVENTS: [string, number][] = [
+		['outbound_link', 18],
+		['download', 12],
+		['scroll_75', 10],
+		['engaged_visit', 9],
+		['newsletter_subscribe', 8],
+		['signup', 6],
+		['route_change', 5]
+	];
 
 /**
  * Insert ~1.6k plausible pageviews across the last 30 days — weekly rhythm,

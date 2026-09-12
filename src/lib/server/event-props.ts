@@ -1,3 +1,7 @@
+/** Keys we never store from client event props (privacy). */
+const BLOCKED_PROP_KEYS =
+	/^(password|passwd|pwd|secret|token|authorization|cookie|email|e-mail|phone|tel|ssn|credit.?card|card.?number|cvv|cvc)$/i;
+
 /** Sanitize optional custom-event props for storage (JSON string, capped). */
 export function serializeEventProps(raw: unknown): string | null {
 	if (raw == null) return null;
@@ -6,6 +10,7 @@ export function serializeEventProps(raw: unknown): string | null {
 	const out: Record<string, string | number | boolean | null> = {};
 	for (const [k, v] of entries) {
 		const key = String(k).slice(0, 40);
+		if (BLOCKED_PROP_KEYS.test(key)) continue;
 		if (typeof v === 'string') out[key] = v.slice(0, 200);
 		else if (typeof v === 'number' && Number.isFinite(v)) out[key] = Math.round(v * 1000) / 1000;
 		else if (typeof v === 'boolean' || v === null) out[key] = v;

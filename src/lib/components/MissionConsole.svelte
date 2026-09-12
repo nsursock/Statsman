@@ -521,11 +521,11 @@
 
 	<section class="console-panel masonry-item">
 		<div class="pane-header">
-			<span class="pane-title"><span class="pane-title-bar"></span> Custom events</span>
+			<span class="pane-title"><span class="pane-title-bar"></span> Events</span>
 		</div>
 		<div class="rank-body">
 			<p class="text-scifi-muted text-[0.65rem] m-0 mb-2 tracking-wide">
-				<code class="text-scifi-cyan">statsman.track('name', data?)</code>
+				Auto + <code class="text-scifi-cyan">statsman.track('name')</code>
 			</p>
 			{#each stats.customEvents.slice(0, 8) as row, i}
 				<div class="rank-row">
@@ -541,7 +541,9 @@
 					</div>
 				</div>
 			{:else}
-				<p class="text-scifi-muted text-xs m-0">No custom events yet — fire one from your site.</p>
+				<p class="text-scifi-muted text-xs m-0">
+					No events yet — install the tracker or fire <code class="text-scifi-cyan">statsman.track()</code>.
+				</p>
 			{/each}
 		</div>
 	</section>

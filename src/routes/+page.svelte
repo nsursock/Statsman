@@ -418,7 +418,7 @@
 				<div class="metric-card" data-reveal>
 					<div class="card-head">
 						<span class="card-label"><span class="label-bar"></span> Paid — established players</span>
-						<span class="status-chip"><span class="dot"></span> Fly.io cloud</span>
+						<span class="status-chip"><span class="dot"></span> managed cloud</span>
 					</div>
 					<div class="card-value mb-1">$9<span class="text-sm text-scifi-muted font-normal"> / mo and up</span></div>
 					<p class="text-scifi-muted text-sm leading-relaxed">
@@ -526,8 +526,8 @@
 				<ul class="space-y-2 list-none p-0 m-0 text-xs">
 					<li><a href="/self-host">Setup guide</a></li>
 					<li><code class="text-scifi-cyan">docker compose up</code></li>
-					<li><code class="text-scifi-cyan">fly deploy</code></li>
-					<li><span class="text-scifi-muted">SQLite volume · MIT</span></li>
+					<li><span class="text-scifi-muted">Any Docker host · SQLite or Postgres</span></li>
+					<li><span class="text-scifi-muted">MIT license</span></li>
 				</ul>
 			</div>
 		</div>

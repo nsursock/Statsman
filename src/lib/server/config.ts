@@ -1,15 +1,28 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 
-export type StatsmanMode = 'selfhost' | 'cloud';
+/** How this deploy behaves:
+ *  - selfhost — customer OSS install: app only (login → dashboard)
+ *  - hosted   — main product site (Railway + Supabase): marketing + your dashboard
+ *  - cloud    — main product site + multi-user magic-link / Stripe
+ */
+export type StatsmanMode = 'selfhost' | 'cloud' | 'hosted';
 
 export function getMode(): StatsmanMode {
 	const raw = (env.STATSMAN_MODE ?? 'selfhost').toLowerCase();
-	return raw === 'cloud' ? 'cloud' : 'selfhost';
+	if (raw === 'cloud') return 'cloud';
+	if (raw === 'hosted') return 'hosted';
+	return 'selfhost';
 }
 
 export function isCloud(): boolean {
 	return getMode() === 'cloud';
+}
+
+/** Marketing landing, pricing, signup — not shown on pure self-host installs. */
+export function showMarketing(): boolean {
+	const mode = getMode();
+	return mode === 'cloud' || mode === 'hosted';
 }
 
 export function getPublicOrigin(): string {
