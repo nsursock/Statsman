@@ -141,7 +141,9 @@
 			name = '';
 			domain = '';
 			await invalidateAll();
-			await goto(`/dashboard?site=${payload.site.id}&days=${data.days}`);
+			await goto(
+				`/dashboard?site=${payload.site.id}&days=${data.days}&points=${data.points}&chart=${data.chart}`
+			);
 			message = 'Site online.';
 			settingsTab = 'tracker';
 		} catch (err) {
@@ -183,12 +185,22 @@
 
 	function switchSite(id: string) {
 		siteMenuOpen = false;
-		goto(`/dashboard?site=${id}&days=${data.days}`);
+		goto(`/dashboard?site=${id}&days=${data.days}&points=${data.points}&chart=${data.chart}`);
 	}
 
 	function switchDays(days: number) {
 		if (!data.site) return;
-		goto(`/dashboard?site=${data.site.id}&days=${days}`);
+		goto(`/dashboard?site=${data.site.id}&days=${days}&points=${data.points}&chart=${data.chart}`);
+	}
+
+	function switchPoints(points: number) {
+		if (!data.site) return;
+		goto(`/dashboard?site=${data.site.id}&days=${data.days}&points=${points}&chart=${data.chart}`);
+	}
+
+	function switchChart(chart: 'line' | 'bars') {
+		if (!data.site) return;
+		goto(`/dashboard?site=${data.site.id}&days=${data.days}&points=${data.points}&chart=${chart}`);
 	}
 
 	async function checkout(plan: 'indie' | 'creator') {
@@ -425,7 +437,11 @@
 					stats={data.stats}
 					recentEvents={data.recentEvents}
 					days={data.days}
+					points={data.points}
+					chart={data.chart}
 					{live}
+					onPointsChange={switchPoints}
+					onChartChange={switchChart}
 				/>
 			{:else if !data.site}
 				<section class="empty-deck" data-deck>

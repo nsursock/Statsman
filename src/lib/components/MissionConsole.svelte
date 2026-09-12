@@ -4,6 +4,7 @@
 	import GeoGlobe from '$lib/components/GeoGlobe.svelte';
 	import { countryName } from '$lib/country-name';
 	import { relTime } from '$lib/rel-time';
+	import { POINT_PRESETS, type ChartType } from '$lib/timeseries';
 
 	type RankStat = { label: string; views: number };
 	type GeoCity = {
@@ -55,17 +56,25 @@
 		stats,
 		recentEvents,
 		days,
+		points = 96,
+		chart = 'line',
 		live = true,
 		kicker = '// Mission control',
-		emptyStream = 'No events yet — the stream is listening.'
+		emptyStream = 'No events yet — the stream is listening.',
+		onPointsChange,
+		onChartChange
 	}: {
 		site: { id: string; name: string; domain: string };
 		stats: Stats;
 		recentEvents: EventRow[];
 		days: number;
+		points?: number;
+		chart?: ChartType;
 		live?: boolean;
 		kicker?: string;
 		emptyStream?: string;
+		onPointsChange?: (points: number) => void;
+		onChartChange?: (chart: ChartType) => void;
 	} = $props();
 
 	const maxPageViews = $derived(Math.max(1, ...stats.topPages.map((r) => r.views), 1));
@@ -133,18 +142,60 @@
 
 		<div class="glass rounded-lg p-2 mb-1 relative">
 			<div class="pane-scan"></div>
-			<div class="flex items-center justify-between gap-2 px-1 pb-1">
-				<span class="text-[0.62rem] tracking-[0.18em] uppercase text-scifi-muted">Signal</span>
-				<span class="legend">
-					<span class="legend-item">
-						<span class="legend-line legend-pv"></span> pageviews
-					</span>
-					<span class="legend-item">
-						<span class="legend-line legend-vis"></span> visitors
-					</span>
+			<div class="flex flex-wrap items-center justify-between gap-2 px-1 pb-1">
+				<span class="text-[0.62rem] tracking-[0.18em] uppercase text-scifi-muted">
+					Signal · {stats.timeseries.length} pts
 				</span>
+				<div class="flex flex-wrap items-center gap-3">
+					{#if onChartChange}
+						<div class="range-seg" role="group" aria-label="Chart type">
+							<button
+								type="button"
+								class="range-btn {chart === 'line' ? 'is-active' : ''}"
+								title="Sparkline"
+								onclick={() => onChartChange('line')}
+							>
+								Line
+							</button>
+							<button
+								type="button"
+								class="range-btn {chart === 'bars' ? 'is-active' : ''}"
+								title="Bars — visitors nested in pageviews"
+								onclick={() => onChartChange('bars')}
+							>
+								Bars
+							</button>
+						</div>
+					{/if}
+					{#if onPointsChange}
+						<div class="range-seg" role="group" aria-label="Chart resolution">
+							{#each POINT_PRESETS as p}
+								<button
+									type="button"
+									class="range-btn {points === p ? 'is-active' : ''}"
+									title="About {p} data points"
+									onclick={() => onPointsChange(p)}
+								>
+									{p}
+								</button>
+							{/each}
+						</div>
+					{/if}
+					<span class="legend">
+						<span class="legend-item">
+							<span class="legend-swatch legend-pv {chart === 'bars' ? 'is-bar' : ''}"
+							></span>
+							pageviews
+						</span>
+						<span class="legend-item">
+							<span class="legend-swatch legend-vis {chart === 'bars' ? 'is-bar' : ''}"
+							></span>
+							visitors
+						</span>
+					</span>
+				</div>
 			</div>
-			<Sparkline data={stats.timeseries} />
+			<Sparkline data={stats.timeseries} variant={chart} />
 		</div>
 	</div>
 </section>
@@ -571,10 +622,16 @@
 		align-items: center;
 		gap: 0.35rem;
 	}
-	.legend-line {
+	.legend-swatch {
 		width: 0.7rem;
 		height: 2px;
 		border-radius: 999px;
+		display: inline-block;
+	}
+	.legend-swatch.is-bar {
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 2px;
 	}
 	.legend-pv {
 		background: var(--scifi-primary);

@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { getDatabasePath } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
+import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
 import type {
 	EventInput,
 	RecentEvent,
@@ -132,8 +133,14 @@ function migrate(db: Database.Database) {
 	}
 }
 
-function buildStats(db: Database.Database, siteId: string, days: number): StatsSummary {
+function buildStats(
+	db: Database.Database,
+	siteId: string,
+	days: number,
+	points = DEFAULT_POINTS
+): StatsSummary {
 	const since = Date.now() - days * 24 * 60 * 60 * 1000;
+	const targetPoints = clampPoints(points);
 
 	const totals = db
 		.prepare(
@@ -267,22 +274,21 @@ function buildStats(db: Database.Database, siteId: string, days: number): StatsS
 						1000
 				);
 
+	const bucketMs = bucketMsForTarget(days, targetPoints);
 	const rawSeries = db
 		.prepare(
-			`SELECT strftime('%Y-%m-%d', created_at / 1000, 'unixepoch') AS date,
+			`SELECT (created_at - (created_at % ?)) AS bucket,
 				COUNT(*) AS pageviews, COUNT(DISTINCT visitor_hash) AS visitors
 			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
-			 GROUP BY date ORDER BY date ASC`
+			 GROUP BY bucket ORDER BY bucket ASC`
 		)
-		.all(siteId, since) as { date: string; pageviews: number; visitors: number }[];
+		.all(bucketMs, siteId, since) as {
+		bucket: number;
+		pageviews: number;
+		visitors: number;
+	}[];
 
-	const seriesMap = new Map(rawSeries.map((r) => [r.date, r]));
-	const timeseries: StatsSummary['timeseries'] = [];
-	for (let i = days - 1; i >= 0; i--) {
-		const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-		const key = d.toISOString().slice(0, 10);
-		timeseries.push(seriesMap.get(key) ?? { date: key, pageviews: 0, visitors: 0 });
-	}
+	const timeseries = fillTimeseries(days, rawSeries, targetPoints);
 
 	return {
 		pageviews: totals.pageviews,
@@ -379,8 +385,8 @@ export function createSqliteStore(): Store {
 			);
 		},
 
-		async getStats(siteId, days = 7) {
-			return buildStats(db, siteId, days);
+		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
+			return buildStats(db, siteId, days, points);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {

@@ -61,6 +61,6 @@ export async function insertEvent(
 	return (await getStore()).insertEvent(event);
 }
 
-export async function getStats(siteId: string, days = 7) {
-	return (await getStore()).getStats(siteId, days);
+export async function getStats(siteId: string, days = 7, points?: number) {
+	return (await getStore()).getStats(siteId, days, points);
 }

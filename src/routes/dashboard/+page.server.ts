@@ -7,6 +7,7 @@ import { planLimits } from '$lib/server/plans';
 import { billingEnabled } from '$lib/server/stripe';
 import { demoSeedEnabled, getDemoSite, seedDemoTraffic } from '$lib/server/demo';
 import { needsOnboarding, operatorSites } from '$lib/server/onboarding';
+import { parseChartParam, parsePointsParam } from '$lib/timeseries';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
 	if (isCloud()) {
@@ -31,9 +32,10 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		sites[0] ||
 		null;
 	const days = Number(url.searchParams.get('days') ?? 7);
-	const stats = site
-		? await getStats(site.id, Number.isFinite(days) ? Math.min(Math.max(days, 1), 90) : 7)
-		: null;
+	const range = Number.isFinite(days) ? Math.min(Math.max(days, 1), 90) : 7;
+	const points = parsePointsParam(url.searchParams.get('points'));
+	const chart = parseChartParam(url.searchParams.get('chart'));
+	const stats = site ? await getStats(site.id, range, points) : null;
 	const hasEvents = site ? await (await getStore()).siteHasEvents(site.id) : false;
 	const recentEvents = site && hasEvents ? await (await getStore()).getRecentEvents(site.id, 14) : [];
 
@@ -56,7 +58,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	return {
 		sites,
 		site,
-		days: Number.isFinite(days) ? days : 7,
+		days: range,
+		points,
+		chart,
 		stats,
 		hasEvents,
 		recentEvents,

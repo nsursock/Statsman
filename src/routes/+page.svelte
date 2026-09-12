@@ -28,7 +28,13 @@
 		const pageviews = Math.round(
 			2400 + Math.sin(i / 3.2) * 700 + Math.sin(i / 9.5) * 400 + ((i * 2654435761) % 997) / 997 * 380
 		);
-		return { date: `d${i}`, pageviews, visitors: Math.round(pageviews * 0.55) };
+		const day = new Date(Date.UTC(2026, 8, 12));
+		day.setUTCDate(day.getUTCDate() - (29 - i));
+		return {
+			date: day.toISOString(),
+			pageviews,
+			visitors: Math.round(pageviews * 0.55)
+		};
 	});
 
 	let root: HTMLElement;

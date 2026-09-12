@@ -2,6 +2,7 @@ import postgres from 'postgres';
 import { randomBytes } from 'node:crypto';
 import { getDatabaseUrl } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
+import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
 import type { EventInput, RecentEvent, Site, StatsSummary, Store, User } from './types';
 
 function sql() {
@@ -91,8 +92,14 @@ async function migrate(db: postgres.Sql) {
 	}
 }
 
-async function buildStats(db: postgres.Sql, siteId: string, days: number): Promise<StatsSummary> {
+async function buildStats(
+	db: postgres.Sql,
+	siteId: string,
+	days: number,
+	points = DEFAULT_POINTS
+): Promise<StatsSummary> {
 	const since = Date.now() - days * 24 * 60 * 60 * 1000;
+	const targetPoints = clampPoints(points);
 
 	const [totals] = await db`
 		SELECT COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
@@ -186,28 +193,22 @@ async function buildStats(db: postgres.Sql, siteId: string, days: number): Promi
 						1000
 				);
 
+	const bucketMs = bucketMsForTarget(days, targetPoints);
 	const rawSeries = await db`
-		SELECT to_char(to_timestamp(created_at / 1000.0) AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
+		SELECT (created_at - (created_at % ${bucketMs}::bigint)) AS bucket,
 			COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
 		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY date ORDER BY date ASC`;
+		GROUP BY 1 ORDER BY 1 ASC`;
 
-	const seriesMap = new Map(rawSeries.map((r) => [r.date as string, r]));
-	const timeseries: StatsSummary['timeseries'] = [];
-	for (let i = days - 1; i >= 0; i--) {
-		const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-		const key = d.toISOString().slice(0, 10);
-		const hit = seriesMap.get(key);
-		timeseries.push(
-			hit
-				? {
-						date: key,
-						pageviews: Number(hit.pageviews),
-						visitors: Number(hit.visitors)
-					}
-				: { date: key, pageviews: 0, visitors: 0 }
-		);
-	}
+	const timeseries = fillTimeseries(
+		days,
+		rawSeries.map((r) => ({
+			bucket: r.bucket as number | string | bigint,
+			pageviews: r.pageviews as number | string,
+			visitors: r.visitors as number | string
+		})),
+		targetPoints
+	);
 
 	return {
 		pageviews: Number(totals.pageviews),
@@ -311,8 +312,8 @@ export async function createPostgresStore(): Promise<Store> {
 				)`;
 		},
 
-		async getStats(siteId, days = 7) {
-			return buildStats(db, siteId, days);
+		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
+			return buildStats(db, siteId, days, points);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {

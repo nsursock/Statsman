@@ -2,10 +2,12 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getSite, getStats } from '$lib/server/db';
 import { isCloud } from '$lib/server/config';
+import { parsePointsParam } from '$lib/timeseries';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const siteId = url.searchParams.get('siteId');
 	const days = Number(url.searchParams.get('days') ?? 7);
+	const points = parsePointsParam(url.searchParams.get('points'));
 	const site = siteId ? await getSite(siteId) : undefined;
 	if (!site) error(404, 'Unknown site');
 
@@ -20,7 +22,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		site,
 		stats: await getStats(
 			site.id,
-			Number.isFinite(days) ? Math.min(Math.max(days, 1), 90) : 7
+			Number.isFinite(days) ? Math.min(Math.max(days, 1), 90) : 7,
+			points
 		)
 	});
 };

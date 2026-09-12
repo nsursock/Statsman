@@ -56,7 +56,15 @@
 	});
 
 	function switchDays(days: number) {
-		goto(`/demo/console?days=${days}`);
+		goto(`/demo/console?days=${days}&points=${data.points}&chart=${data.chart}`);
+	}
+
+	function switchPoints(points: number) {
+		goto(`/demo/console?days=${data.days}&points=${points}&chart=${data.chart}`);
+	}
+
+	function switchChart(chart: 'line' | 'bars') {
+		goto(`/demo/console?days=${data.days}&points=${data.points}&chart=${chart}`);
 	}
 </script>
 
@@ -116,9 +124,13 @@
 				stats={data.stats}
 				recentEvents={data.recentEvents}
 				days={data.days}
+				points={data.points}
+				chart={data.chart}
 				{live}
 				kicker="// Ungated demo console"
 				emptyStream="No events yet — open the fake blog and click around."
+				onPointsChange={switchPoints}
+				onChartChange={switchChart}
 			/>
 
 			<div class="cta-panel" data-deck>

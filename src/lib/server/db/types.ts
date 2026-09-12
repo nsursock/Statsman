@@ -105,7 +105,7 @@ export type Store = {
 	deleteSite(id: string): Promise<boolean>;
 	countSitesForUser(userId: string): Promise<number>;
 	insertEvent(event: EventInput): Promise<void>;
-	getStats(siteId: string, days?: number): Promise<StatsSummary>;
+	getStats(siteId: string, days?: number, points?: number): Promise<StatsSummary>;
 	getRecentEvents(siteId: string, limit?: number): Promise<RecentEvent[]>;
 	siteHasEvents(siteId: string): Promise<boolean>;
 
