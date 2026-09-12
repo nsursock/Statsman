@@ -337,13 +337,16 @@
 
 			<header class="settings-head">
 				<div class="min-w-0">
-					<p class="label-kicker text-scifi-primary m-0 mb-1">// Mission config</p>
-					<h2 id="settings-title" class="m-0 text-xl font-extrabold tracking-tight">Settings</h2>
+					<p class="label-kicker text-scifi-primary m-0 mb-1 hidden sm:block">// Mission config</p>
+					<h2 id="settings-title" class="m-0 text-lg sm:text-xl font-extrabold tracking-tight">Settings</h2>
 				</div>
 				<div class="flex items-center gap-2 shrink-0">
-					<span class="status-chip hidden sm:inline-flex"><span class="dot"></span> secured</span>
-					<button type="button" class="btn btn-sm btn-ghost" onclick={onClose} aria-label="Close settings">
-						Esc · Close
+					<span class="status-chip hidden md:inline-flex"><span class="dot"></span> secured</span>
+					<button type="button" class="settings-close" onclick={onClose} aria-label="Close settings">
+						<span class="hidden sm:inline">Esc · Close</span>
+						<svg class="sm:hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+							<path d="M6 6l12 12M18 6L6 18" />
+						</svg>
 					</button>
 				</div>
 			</header>
@@ -386,8 +389,9 @@
 
 				<section class="settings-panel" aria-live="polite">
 					<div class="settings-panel-head">
-						<p class="label-kicker m-0 mb-1">{activeMeta.hint}</p>
-						<h3 class="m-0 text-lg font-bold tracking-tight">{activeMeta.label}</h3>
+						<p class="label-kicker m-0 mb-1 hidden sm:block">{activeMeta.hint}</p>
+						<h3 class="m-0 text-base sm:text-lg font-bold tracking-tight">{activeMeta.label}</h3>
+						<p class="settings-panel-hint sm:hidden">{activeMeta.hint}</p>
 					</div>
 
 					{#key contentKey}
@@ -902,10 +906,40 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 	.settings-panel-head {
 		padding: 1rem 1.25rem 0.35rem;
 	}
+	.settings-panel-hint {
+		margin: 0.35rem 0 0;
+		font-size: 0.72rem;
+		line-height: 1.4;
+		color: var(--scifi-muted);
+	}
 	.settings-panel-body {
 		padding: 0.5rem 1.25rem 1.25rem;
 		overflow-y: auto;
 		animation: settings-panel-in 0.22s var(--scifi-ease, ease-out);
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.settings-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 2.5rem;
+		min-height: 2.5rem;
+		padding: 0.35rem 0.65rem;
+		border-radius: 10px;
+		border: 1px solid var(--scifi-border);
+		background: rgba(var(--scifi-bg-deep-rgb), 0.4);
+		color: var(--scifi-text);
+		font-size: 0.72rem;
+		letter-spacing: 0.04em;
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+	.settings-close:hover {
+		border-color: rgba(var(--scifi-primary-rgb), 0.45);
+		background: rgba(var(--scifi-primary-rgb), 0.08);
 	}
 
 	.site-list {
@@ -1212,30 +1246,132 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 	}
 
 	@media (max-width: 640px) {
+		.settings-backdrop {
+			align-items: stretch;
+			justify-content: stretch;
+			padding: 0;
+			background: rgba(var(--scifi-backdrop-rgb), 0.78);
+		}
+
+		.settings-sheet {
+			width: 100%;
+			max-width: none;
+			max-height: none;
+			height: 100dvh;
+			height: 100vh;
+			border-radius: 0;
+			border: none;
+			box-shadow: none;
+		}
+
+		.settings-head {
+			padding: 0.85rem 1rem;
+			padding-top: max(0.85rem, env(safe-area-inset-top));
+			gap: 0.75rem;
+		}
+
 		.settings-body {
 			grid-template-columns: 1fr;
 			grid-template-rows: auto 1fr;
+			min-height: 0;
+			flex: 1;
 		}
+
 		.settings-nav {
-			flex-direction: row;
-			overflow-x: auto;
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+			gap: 0.35rem;
+			flex-direction: unset;
+			overflow-x: visible;
 			border-right: none;
 			border-bottom: 1px solid var(--scifi-border);
-			padding: 0.55rem;
-			scrollbar-width: none;
+			padding: 0.55rem 0.65rem;
+			background: rgba(var(--scifi-bg-deep-rgb), 0.55);
 		}
-		.settings-nav::-webkit-scrollbar {
-			display: none;
-		}
+
 		.settings-nav-item {
-			flex: 0 0 auto;
-			max-width: 9.5rem;
+			flex: unset;
+			max-width: none;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			min-height: 3.35rem;
+			padding: 0.45rem 0.25rem;
+			text-align: center;
+			border-radius: 12px;
 		}
+
+		.settings-nav-item.active {
+			box-shadow: 0 0 0 1px rgba(var(--scifi-primary-rgb), 0.35);
+		}
+
+		.settings-nav-icon {
+			width: 1.55rem;
+			height: 1.55rem;
+			margin: 0 auto;
+		}
+
+		.settings-nav-copy {
+			align-items: center;
+			gap: 0.15rem;
+			min-width: 0;
+			width: 100%;
+		}
+
+		.settings-nav-label {
+			font-size: 0.62rem;
+			letter-spacing: 0.04em;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+
 		.settings-nav-hint {
 			display: none;
 		}
-		.settings-sheet {
-			max-height: calc(100vh - 1.25rem);
+
+		.settings-panel-head {
+			padding: 0.85rem 1rem 0.25rem;
+		}
+
+		.settings-panel-body {
+			padding: 0.35rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+		}
+
+		.site-card {
+			flex-wrap: wrap;
+		}
+
+		.site-main {
+			padding: 0.85rem 0.8rem;
+		}
+
+		.site-remove {
+			flex: 1 1 100%;
+			border-left: none;
+			border-top: 1px solid var(--scifi-border);
+			min-height: 2.75rem;
+		}
+
+		.snippet-block {
+			border-radius: 10px;
+		}
+
+		.snippet-code {
+			font-size: 0.65rem;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.exclusion-row {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.65rem;
+		}
+
+		.exclusion-row .btn {
+			width: 100%;
+			justify-content: center;
 		}
 	}
 

@@ -7,6 +7,7 @@
 	import MissionConsole from '$lib/components/MissionConsole.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
+	import DashboardNav from '$lib/components/DashboardNav.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -26,7 +27,6 @@
 	let settingsOpen = $state(false);
 	let settingsTab = $state<'sites' | 'tracker' | 'appearance' | 'demo' | 'account'>('sites');
 	let siteMenuOpen = $state(false);
-	let siteMenuRoot: HTMLElement | undefined = $state();
 	let clock = $state('');
 
 	const identityLabel = $derived(
@@ -90,15 +90,10 @@
 			timers.push(setInterval(() => invalidateAll(), 4000));
 		}
 
-		const onDoc = (e: MouseEvent) => {
-			if (siteMenuRoot && !siteMenuRoot.contains(e.target as Node)) siteMenuOpen = false;
-		};
 		window.addEventListener('keydown', onKey);
-		document.addEventListener('click', onDoc);
 		return () => {
 			timers.forEach(clearInterval);
 			window.removeEventListener('keydown', onKey);
-			document.removeEventListener('click', onDoc);
 		};
 	});
 
@@ -306,111 +301,20 @@
 
 	<ConsoleFrame>
 		{#snippet header()}
-			<header class="command-bar sticky top-3 z-40 mb-5" data-enter>
-				<div class="flex items-center gap-3 min-w-0">
-					<a href="/" class="brand-mark text-base no-underline shrink-0">Statsman</a>
-					<span class="badge badge-primary shrink-0">{data.isCloud ? 'cloud' : 'selfhost'}</span>
-					<span class="hidden md:inline text-[0.65rem] font-mono text-scifi-muted tracking-wider tabular-nums">
-						{clock || '—:—:—'}
-					</span>
-				</div>
-
-				<div class="flex items-center gap-2 flex-wrap justify-end min-w-0">
-					<button
-						type="button"
-						class="live-toggle {live ? 'is-live' : ''}"
-						title="Toggle live refresh"
-						onclick={() => (live = !live)}
-					>
-						<span class="live-dot"></span>
-						{live ? 'LIVE' : 'PAUSED'}
-					</button>
-
-					{#if data.sites.length > 0}
-						<div class="site-switch relative" bind:this={siteMenuRoot}>
-							<button
-								type="button"
-								class="site-switch-btn"
-								aria-haspopup="listbox"
-								aria-expanded={siteMenuOpen}
-								onclick={(e) => {
-									e.stopPropagation();
-									siteMenuOpen = !siteMenuOpen;
-								}}
-							>
-								<span class="site-switch-signal" aria-hidden="true"></span>
-								<span class="min-w-0 text-left">
-									<span class="block text-xs font-semibold truncate max-w-[7rem] sm:max-w-[11rem]">
-										{data.site?.name ?? 'Select site'}
-									</span>
-									<span class="block text-[0.6rem] text-scifi-muted truncate max-w-[7rem] sm:max-w-[11rem]">
-										{data.site?.domain ?? '—'}
-									</span>
-								</span>
-								<span class="site-chevron" aria-hidden="true">▾</span>
-							</button>
-							{#if siteMenuOpen}
-								<div class="site-menu" role="listbox" aria-label="Sites">
-									{#each data.sites as s (s.id)}
-										<button
-											type="button"
-											role="option"
-											class="site-menu-item {data.site?.id === s.id ? 'is-active' : ''}"
-											aria-selected={data.site?.id === s.id}
-											onclick={() => switchSite(s.id)}
-										>
-											<span class="truncate font-semibold">{s.name}</span>
-											<span class="truncate text-[0.65rem] text-scifi-muted">{s.domain}</span>
-										</button>
-									{/each}
-									<button
-										type="button"
-										class="site-menu-item site-menu-manage"
-										onclick={() => openSettings('sites')}
-									>
-										Manage sites…
-									</button>
-								</div>
-							{/if}
-						</div>
-					{/if}
-
-					<div class="range-seg" role="group" aria-label="Date range">
-						{#each [1, 7, 30] as d}
-							<button
-								type="button"
-								class="range-btn {data.days === d ? 'is-active' : ''}"
-								onclick={() => switchDays(d)}
-							>
-								{d}d
-							</button>
-						{/each}
-					</div>
-
-					<button
-						type="button"
-						class="btn btn-sm btn-primary"
-						onclick={() => openSettings('sites')}
-						title="Settings (⌘,)"
-					>
-						Settings
-					</button>
-
-					<button
-						type="button"
-						class="identity-chip"
-						title="Account"
-						onclick={() => openSettings('account')}
-					>
-						<span class="text-[0.6rem] text-scifi-muted tracking-[0.1em] uppercase truncate">
-							{identityMeta}
-						</span>
-						<span class="text-xs font-semibold text-scifi-cyan truncate">{identityLabel}</span>
-					</button>
-
-					<a class="btn btn-xs btn-ghost shrink-0" href="/auth/logout">Logout</a>
-				</div>
-			</header>
+			<DashboardNav
+				isCloud={data.isCloud}
+				sites={data.sites}
+				site={data.site}
+				days={data.days}
+				bind:live
+				{clock}
+				{identityLabel}
+				{identityMeta}
+				bind:siteMenuOpen
+				onSwitchSite={switchSite}
+				onSwitchDays={switchDays}
+				onOpenSettings={openSettings}
+			/>
 		{/snippet}
 
 		<div class="space-y-4">
@@ -523,104 +427,6 @@
 </div>
 
 <style>
-	.site-switch-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		max-width: 14rem;
-		padding: 0.3rem 0.55rem 0.3rem 0.45rem;
-		border-radius: 10px;
-		border: 1px solid var(--scifi-border);
-		background: rgba(var(--scifi-bg-deep-rgb), 0.35);
-		color: inherit;
-		cursor: pointer;
-		transition: border-color 0.18s ease;
-	}
-	.site-switch-btn:hover,
-	.site-switch-btn[aria-expanded='true'] {
-		border-color: rgba(var(--scifi-primary-rgb), 0.5);
-	}
-	.site-switch-signal {
-		width: 0.4rem;
-		height: 0.4rem;
-		border-radius: 999px;
-		background: var(--scifi-primary);
-		box-shadow: 0 0 8px var(--scifi-primary-glow);
-		flex-shrink: 0;
-	}
-	.site-chevron {
-		font-size: 0.6rem;
-		color: var(--scifi-muted);
-		margin-left: 0.15rem;
-	}
-	.site-menu {
-		position: absolute;
-		top: calc(100% + 0.4rem);
-		right: 0;
-		z-index: 50;
-		min-width: 14rem;
-		max-height: 16rem;
-		overflow-y: auto;
-		padding: 0.35rem;
-		border-radius: 12px;
-		border: 1px solid var(--scifi-border-accent);
-		background: rgba(var(--scifi-surface-1-rgb), 0.97);
-		box-shadow: 0 16px 40px -12px rgba(var(--scifi-shadow-rgb), 0.65);
-		backdrop-filter: blur(12px);
-		animation: menu-in 0.16s var(--scifi-ease, ease-out);
-	}
-	.site-menu-item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.1rem;
-		width: 100%;
-		padding: 0.55rem 0.65rem;
-		border: 0;
-		border-radius: 8px;
-		background: transparent;
-		color: inherit;
-		text-align: left;
-		cursor: pointer;
-		font-size: 0.8rem;
-	}
-	.site-menu-item:hover,
-	.site-menu-item.is-active {
-		background: rgba(var(--scifi-primary-rgb), 0.1);
-	}
-	.site-menu-manage {
-		margin-top: 0.2rem;
-		border-top: 1px solid var(--scifi-border);
-		border-radius: 0 0 8px 8px;
-		color: var(--scifi-cyan);
-		font-size: 0.72rem;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-	}
-
-	.identity-chip {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.05rem;
-		min-width: 0;
-		max-width: 11rem;
-		padding: 0.3rem 0.65rem;
-		border-radius: 10px;
-		border: 1px solid var(--scifi-border);
-		background: rgba(var(--scifi-bg-deep-rgb), 0.35);
-		cursor: pointer;
-		text-align: left;
-		transition: border-color 0.18s ease;
-	}
-	.identity-chip:hover {
-		border-color: rgba(var(--scifi-cyan-rgb), 0.45);
-	}
-	@media (min-width: 640px) {
-		.identity-chip {
-			max-width: 15rem;
-		}
-	}
-
 	.cap-banner {
 		display: flex;
 		flex-wrap: wrap;
@@ -676,20 +482,9 @@
 			transform: translateX(-50%) scale(1.08);
 		}
 	}
-	@keyframes menu-in {
-		from {
-			opacity: 0;
-			transform: translateY(-4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.waiting-pulse,
-		.site-menu {
+		.waiting-pulse {
 			animation: none;
 		}
 	}

@@ -5,7 +5,7 @@
 	import { enterShell, gsap } from '@scifiui/core/js';
 	import ConsoleFrame from '$lib/components/ConsoleFrame.svelte';
 	import MissionConsole from '$lib/components/MissionConsole.svelte';
-	import ThemePicker from '$lib/components/ThemePicker.svelte';
+	import DashboardNav from '$lib/components/DashboardNav.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -13,6 +13,9 @@
 	let root: HTMLElement;
 	let live = $state(true);
 	let clock = $state('');
+	let siteMenuOpen = $state(false);
+
+	const sites = $derived([data.site]);
 
 	$effect(() => {
 		if (!browser || !live) return;
@@ -55,6 +58,11 @@
 		};
 	});
 
+	function switchSite(_id: string) {
+		/* Demo console is a single site. */
+		siteMenuOpen = false;
+	}
+
 	function switchDays(days: number) {
 		goto(`/demo/console?days=${days}&points=${data.points}&chart=${data.chart}`);
 	}
@@ -79,43 +87,19 @@
 <div bind:this={root}>
 	<ConsoleFrame>
 		{#snippet header()}
-			<header class="command-bar sticky top-3 z-40 mb-5" data-enter>
-				<div class="flex items-center gap-3 min-w-0">
-					<a href="/" class="brand-mark text-base no-underline shrink-0">Statsman</a>
-					<span class="badge badge-primary shrink-0">demo</span>
-					<span class="status-chip hidden sm:inline-flex">
-						<span class="dot"></span> public · no login
-					</span>
-					<span class="hidden md:inline text-[0.65rem] font-mono text-scifi-muted tracking-wider tabular-nums">
-						{clock || '—:—:—'}
-					</span>
-				</div>
-				<div class="flex items-center gap-2 flex-wrap justify-end">
-					<button
-						type="button"
-						class="live-toggle {live ? 'is-live' : ''}"
-						title="Toggle live refresh"
-						onclick={() => (live = !live)}
-					>
-						<span class="live-dot"></span>
-						{live ? 'LIVE' : 'PAUSED'}
-					</button>
-					<div class="range-seg" role="group" aria-label="Date range">
-						{#each [1, 7, 30] as d}
-							<button
-								type="button"
-								class="range-btn {data.days === d ? 'is-active' : ''}"
-								onclick={() => switchDays(d)}
-							>
-								{d}d
-							</button>
-						{/each}
-					</div>
-					<ThemePicker compact />
-					<a href="/demo" data-sveltekit-reload class="btn btn-xs btn-ghost">← Fake blog</a>
-					<a href="/" class="btn btn-xs btn-ghost">Exit demo</a>
-				</div>
-			</header>
+			<DashboardNav
+				variant="demo"
+				{sites}
+				site={data.site}
+				days={data.days}
+				bind:live
+				{clock}
+				identityLabel="Try Statsman free"
+				identityMeta="demo · no login"
+				bind:siteMenuOpen
+				onSwitchSite={switchSite}
+				onSwitchDays={switchDays}
+			/>
 		{/snippet}
 
 		<div class="space-y-4">
