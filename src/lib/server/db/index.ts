@@ -1,7 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { usePostgres } from '$lib/server/config';
-import { createSqliteStore } from './sqlite';
-import { createPostgresStore } from './postgres';
 import type { Store } from './types';
 
 export type {
@@ -17,7 +15,9 @@ let storePromise: Promise<Store> | null = null;
 
 export function getStore(): Promise<Store> {
 	if (!storePromise) {
-		storePromise = usePostgres() ? createPostgresStore() : Promise.resolve(createSqliteStore());
+		storePromise = usePostgres()
+			? import('./postgres').then((m) => m.createPostgresStore())
+			: import('./sqlite').then((m) => Promise.resolve(m.createSqliteStore()));
 	}
 	return storePromise;
 }

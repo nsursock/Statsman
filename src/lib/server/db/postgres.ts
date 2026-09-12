@@ -8,7 +8,13 @@ import type { EventInput, RecentEvent, Site, StatsSummary, Store, User } from '.
 function sql() {
 	const url = getDatabaseUrl();
 	if (!url) throw new Error('DATABASE_URL is required for Postgres store');
-	return postgres(url, { max: 10 });
+	const local = /@(localhost|127\.0\.0\.1)(:|\/)/i.test(url);
+	return postgres(url, {
+		max: 10,
+		// Supabase / managed Postgres require TLS from Railway and other clouds.
+		ssl: local ? false : 'require',
+		connect_timeout: 15
+	});
 }
 
 async function migrate(db: postgres.Sql) {
