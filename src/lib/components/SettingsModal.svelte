@@ -308,9 +308,11 @@
 							{:else if tab === 'tracker'}
 								{#if site}
 									<p class="text-sm text-scifi-muted m-0 mb-3 leading-relaxed">
-										Drop this on <strong class="text-[var(--scifi-text)]">{site.name}</strong>
-										({site.domain}) before <code class="text-scifi-cyan">&lt;/body&gt;</code>.
-										~1&nbsp;KB, zero cookies.
+										Paste this into
+										<strong class="text-[var(--scifi-text)]">{site.name}</strong>’s custom
+										code / header-footer setting (WordPress theme options, injection plugins,
+										etc.) — head or footer. ~1&nbsp;KB, zero cookies. Domain:
+										<code class="text-scifi-cyan">{site.domain}</code>
 									</p>
 									<div class="snippet-block">
 										<div class="snippet-toolbar">

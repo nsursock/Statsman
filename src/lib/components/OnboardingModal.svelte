@@ -216,8 +216,8 @@
 				<div class="space-y-3">
 					{#if site}
 						<p class="text-sm text-scifi-muted m-0">
-							Paste before <code class="text-scifi-cyan">&lt;/body&gt;</code> on
-							<strong>{site.name}</strong> ({site.domain}).
+							Paste into your site’s custom code / header-footer setting (WordPress, Ghost,
+							etc.) for <strong>{site.name}</strong> ({site.domain}).
 						</p>
 						<pre
 							class="glass rounded-lg p-3 text-xs text-scifi-cyan overflow-x-auto"

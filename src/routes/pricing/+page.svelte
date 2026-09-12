@@ -70,12 +70,13 @@
 			<div class="pane-header">
 				<span class="pane-title"><span class="pane-title-bar"></span> Prefer self-host?</span>
 			</div>
-			<div class="p-4 text-sm text-scifi-muted space-y-2">
-				<p>
-					Run the MIT core with Docker Compose. Unlimited practical usage on your hardware — cloud sells
-					convenience, not the analytics.
+			<div class="p-4 text-sm text-scifi-muted space-y-3">
+				<p class="m-0">
+					Deploy on Railway + Supabase (or Fly / a VPS). Unlimited practical usage on your stack —
+					cloud sells convenience, not the analytics.
 				</p>
-				<pre class="glass rounded-lg p-3 text-xs text-scifi-cyan overflow-x-auto">docker compose up -d</pre>
+				<pre class="glass rounded-lg p-3 text-xs text-scifi-cyan overflow-x-auto m-0">Railway + Supabase</pre>
+				<a class="btn btn-sm btn-primary inline-flex" href="/self-host">Self-host guide →</a>
 			</div>
 		</div>
 	</div>

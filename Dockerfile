@@ -22,6 +22,5 @@ COPY vendor ./vendor
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/build ./build
 RUN mkdir -p /data
-VOLUME ["/data"]
 EXPOSE 3000
 CMD ["node", "build"]

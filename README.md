@@ -15,7 +15,7 @@ Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 | Storage | SQLite volume | Postgres (`DATABASE_URL`) |
 | Auth | Optional `ADMIN_TOKEN` | Magic-link email |
 | Limits | Your machine | Free / Indie $9 / Creator $19 |
-| Deploy | `docker compose up` | Fly.io (`fly.toml`) |
+| Deploy | Fly / VPS / Docker (public URL) | Managed cloud |
 
 ## Quick start (dev)
 
@@ -27,18 +27,27 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). Dashboard is open in self-host mode unless `ADMIN_TOKEN` is set.
 
-## Docker (self-host)
+## Self-host (production)
+
+Generic step-by-step: [`/self-host`](/self-host).
+
+**Recommended stack:** [Railway](https://railway.app) (app, Dockerfile) + [Supabase](https://supabase.com) (Postgres). Set `STATSMAN_MODE=selfhost`, `PUBLIC_ORIGIN`, `DATABASE_URL`, `ADMIN_TOKEN`, `SESSION_SECRET`.
+
+```html
+<script defer src="https://YOUR_APP.up.railway.app/tracker.js" data-site="SITE_ID"></script>
+```
+
+Paste into WordPress/Ghost custom code settings — or set `PUBLIC_ANALYTICS_ORIGIN` + `PUBLIC_ANALYTICS_SITE_ID` on a Statsman marketing deploy.
+
+> Vercel is a poor fit for this repo’s `adapter-node` server; use Railway/Fly/Render for the app. Supabase (or any Postgres) works for the database.
+
+### Docker (laptop or VPS)
 
 ```bash
 docker compose up -d --build
 ```
 
-App: [http://localhost:3000](http://localhost:3000) · data in Docker volume `statsman-data`.
-
-```html
-<script defer src="http://localhost:3000/tracker.js" data-site="SITE_ID"></script>
-```
-
+On a VPS, set `PUBLIC_ORIGIN` to your public HTTPS URL (and optionally `DATABASE_URL` for Postgres). Locally: [http://localhost:3000](http://localhost:3000) — fine for UI, not for real traffic.
 ## Demo lab
 
 In `npm run dev`, a **Demo Site** is auto-created (domain `localhost`): the landing page tracks itself into it, and a fake blog lives at [`/demo`](http://localhost:5173/demo) — every click fires a real event. The demo site is backfilled with ~30 days of synthetic traffic so the dashboard looks alive on first boot.

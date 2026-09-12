@@ -143,6 +143,7 @@
 				<a href="#why" class="hover:text-scifi-primary transition-colors no-underline">Why</a>
 				<a href="#how" class="hover:text-scifi-primary transition-colors no-underline">How it works</a>
 				<a href="#plans" class="hover:text-scifi-primary transition-colors no-underline">Plans</a>
+				<a href="/self-host" class="hover:text-scifi-primary transition-colors no-underline">Self-host</a>
 			</nav>
 			<div class="flex gap-2 items-center">
 				<ThemePicker compact />
@@ -358,8 +359,8 @@
 						<li class="step step-primary">Watch the signal</li>
 					</ol>
 					<p class="text-scifi-muted text-sm leading-relaxed mb-4">
-						Create a site in the dashboard, drop this before
-						<code class="text-scifi-cyan">&lt;/body&gt;</code>, and pageviews start flowing. No tag
+						Create a site in the dashboard, paste the one-line snippet into your CMS custom code /
+						header-footer setting (WordPress, Ghost, etc.), and pageviews start flowing. No tag
 						manager, no build step, no cookie audit.
 					</p>
 					<ul class="text-sm space-y-2 list-none p-0 m-0">
@@ -523,10 +524,10 @@
 			<div>
 				<p class="footer-title">Self-host</p>
 				<ul class="space-y-2 list-none p-0 m-0 text-xs">
+					<li><a href="/self-host">Setup guide</a></li>
 					<li><code class="text-scifi-cyan">docker compose up</code></li>
 					<li><code class="text-scifi-cyan">fly deploy</code></li>
-					<li><span class="text-scifi-muted">SQLite volume · Postgres cloud</span></li>
-					<li><span class="text-scifi-muted">MIT license</span></li>
+					<li><span class="text-scifi-muted">SQLite volume · MIT</span></li>
 				</ul>
 			</div>
 		</div>
