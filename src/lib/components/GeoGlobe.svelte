@@ -66,6 +66,8 @@
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 		renderer.outputColorSpace = THREE.SRGBColorSpace;
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		renderer.toneMappingExposure = 1.45;
 
 		const controls = new OrbitControls(camera, el);
 		controls.enableDamping = true;
@@ -93,33 +95,41 @@
 		root.rotation.y = Math.PI;
 		scene.add(root);
 
-		scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-		const sun = new THREE.DirectionalLight(0xfff5e6, 1.35);
-		sun.position.set(5, 2.5, 3);
+		// Keep both hemispheres readable — a single hard sun makes land/ocean muddy.
+		scene.add(new THREE.AmbientLight(0xffffff, 1.05));
+		const hemi = new THREE.HemisphereLight(0xd8ecff, 0x1a2433, 0.95);
+		scene.add(hemi);
+		const sun = new THREE.DirectionalLight(0xfff8ef, 0.65);
+		sun.position.set(5, 3.2, 2.5);
 		scene.add(sun);
-		const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
-		fill.position.set(-4, -1, -2);
+		const fill = new THREE.DirectionalLight(0xb8d4ff, 0.55);
+		fill.position.set(-4.5, 0.8, -2.5);
 		scene.add(fill);
+		const rim = new THREE.DirectionalLight(0x9adfff, 0.35);
+		rim.position.set(0, -2.5, -4);
+		scene.add(rim);
 
 		const globeR = 1.28;
 		let primary = cssColor('--scifi-primary', '#ff2a6d');
 		let cyan = cssColor('--scifi-cyan', '#2ee6ff');
 
 		const sphereGeo = new THREE.SphereGeometry(globeR, 72, 72);
-		const globeMat = new THREE.MeshPhongMaterial({
-			color: 0x8899aa,
-			shininess: 12,
-			specular: new THREE.Color(0x222233)
+		const globeMat = new THREE.MeshStandardMaterial({
+			color: 0xffffff,
+			roughness: 0.78,
+			metalness: 0.04,
+			emissive: new THREE.Color(0x0a1520),
+			emissiveIntensity: 0.12
 		});
 		const globe = new THREE.Mesh(sphereGeo, globeMat);
 		root.add(globe);
 
 		const atmos = new THREE.Mesh(
-			new THREE.SphereGeometry(globeR * 1.04, 48, 48),
+			new THREE.SphereGeometry(globeR * 1.045, 48, 48),
 			new THREE.MeshBasicMaterial({
 				color: cyan,
 				transparent: true,
-				opacity: 0.12,
+				opacity: 0.1,
 				side: THREE.BackSide
 			})
 		);
@@ -155,14 +165,15 @@
 				try {
 					bumpTex = await loadTex(EARTH_TOPOLOGY);
 					globeMat.bumpMap = bumpTex;
-					globeMat.bumpScale = 0.035;
+					globeMat.bumpScale = 0.012;
 					globeMat.needsUpdate = true;
 				} catch {
 					/* bump optional */
 				}
 			} catch {
 				status = 'Earth texture failed — pins still geo-located';
-				globeMat.color.copy(cyan.clone().multiplyScalar(0.25));
+				globeMat.color.copy(cyan.clone().multiplyScalar(0.55));
+				globeMat.emissiveIntensity = 0.25;
 			}
 		})();
 
@@ -303,7 +314,12 @@
 		min-height: 260px;
 		border-radius: 12px;
 		overflow: hidden;
-		background: rgba(var(--scifi-bg-deep-rgb), 0.55);
+		background: radial-gradient(
+			ellipse at 40% 30%,
+			rgba(var(--scifi-cyan-rgb), 0.12),
+			rgba(var(--scifi-bg-deep-rgb), 0.35) 55%,
+			rgba(var(--scifi-bg-deep-rgb), 0.5)
+		);
 	}
 	.globe-canvas {
 		display: block;

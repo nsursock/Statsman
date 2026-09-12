@@ -1,12 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getSite, getStore, hashVisitor, insertEvent, currentYyyymm } from '$lib/server/db';
+import { getSite, getStore, hashVisitor, currentYyyymm } from '$lib/server/db';
 import { parseUserAgent } from '$lib/server/ua';
 import { hostsMatch, requestHost } from '$lib/server/domain';
 import { isCloud } from '$lib/server/config';
 import { planLimits } from '$lib/server/plans';
 import { geoFromHeaders, resolveClientIp } from '$lib/server/geo';
 import { parseDurationMs, serializeEventProps } from '$lib/server/event-props';
+import { enqueueEvent } from '$lib/server/event-buffer';
 import {
 	ipIsExcluded,
 	isDevHostname,
@@ -92,30 +93,35 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const durationMs = parseDurationMs(body.duration);
 	const props = serializeEventProps(body.data ?? body.props);
 
-	await insertEvent({
-		siteId,
-		name: eventName,
-		path: path.slice(0, 500),
-		referrer,
-		title,
-		lang,
-		screen,
-		browser,
-		os,
-		device,
-		country: geo.country,
-		city: geo.city,
-		lat: geo.lat,
-		lng: geo.lng,
-		durationMs,
-		props,
-		visitorHash: hashVisitor(ip, ua, daySalt)
-	});
+	const userId = site.user_id;
+	enqueueEvent(
+		{
+			siteId,
+			name: eventName,
+			path: path.slice(0, 500),
+			referrer,
+			title,
+			lang,
+			screen,
+			browser,
+			os,
+			device,
+			country: geo.country,
+			city: geo.city,
+			lat: geo.lat,
+			lng: geo.lng,
+			durationMs,
+			props,
+			visitorHash: hashVisitor(ip, ua, daySalt)
+		},
+		isCloud() && userId && isPageview
+			? async () => {
+					const store = await getStore();
+					await store.incrementMonthlyUsage(userId, currentYyyymm());
+				}
+			: undefined
+	);
 
-	if (isCloud() && site.user_id && isPageview) {
-		const store = await getStore();
-		await store.incrementMonthlyUsage(site.user_id, currentYyyymm());
-	}
-
+	// Respond immediately — insert happens in the background buffer.
 	return json({ ok: true }, { headers: CORS });
 };

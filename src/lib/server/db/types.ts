@@ -121,6 +121,8 @@ export type Store = {
 	deleteSite(id: string): Promise<boolean>;
 	countSitesForUser(userId: string): Promise<number>;
 	insertEvent(event: EventInput): Promise<void>;
+	/** Optional batch insert (Postgres). Falls back to per-row insertEvent. */
+	insertEvents?(events: EventInput[]): Promise<void>;
 	getStats(siteId: string, days?: number, points?: number): Promise<StatsSummary>;
 	getRecentEvents(siteId: string, limit?: number): Promise<RecentEvent[]>;
 	siteHasEvents(siteId: string): Promise<boolean>;

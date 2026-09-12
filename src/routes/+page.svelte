@@ -4,7 +4,7 @@
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import Scene3D from '$lib/components/Scene3D.svelte';
 	import Sparkline from '$lib/components/Sparkline.svelte';
-	import ThemePicker from '$lib/components/ThemePicker.svelte';
+	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -130,34 +130,7 @@
 
 	<div class="relative z-10 mx-auto max-w-6xl px-4 pt-6 sm:px-6">
 		<!-- ============ NAV ============ -->
-		<header class="app-bar sticky top-4 z-40 mb-14 sm:mb-20" data-enter>
-			<div class="flex items-center gap-3 min-w-0">
-				<a href="/" class="brand-mark text-base no-underline">Statsman</a>
-				<span class="badge badge-primary hidden sm:inline-flex">analytics</span>
-				<span class="status-chip hidden md:inline-flex"><span class="dot"></span> hybrid</span>
-			</div>
-			<nav class="hidden lg:flex items-center gap-5 text-xs text-scifi-muted">
-				{#if data.demo}
-					<a href="/demo" data-sveltekit-reload class="hover:text-scifi-primary transition-colors no-underline">Demo</a>
-				{/if}
-				<a href="#why" class="hover:text-scifi-primary transition-colors no-underline">Why</a>
-				<a href="#how" class="hover:text-scifi-primary transition-colors no-underline">How it works</a>
-				<a href="#plans" class="hover:text-scifi-primary transition-colors no-underline">Plans</a>
-				<a href="/self-host" class="hover:text-scifi-primary transition-colors no-underline">Self-host</a>
-			</nav>
-			<div class="flex gap-2 items-center">
-				<ThemePicker compact />
-				{#if data.demo}
-					<a href="/demo" data-sveltekit-reload class="btn btn-sm btn-ghost hidden sm:inline-flex">Demo</a>
-				{/if}
-				{#if data.authed}
-					<a href="/dashboard" class="btn btn-sm btn-primary">Dashboard</a>
-				{:else}
-					<a href="/login" class="btn btn-sm btn-ghost hidden sm:inline-flex">Log in</a>
-					<a href="/signup" class="btn btn-sm btn-primary">Sign up</a>
-				{/if}
-			</div>
-		</header>
+		<MarketingNav demo={Boolean(data.demo)} authed={Boolean(data.authed)} />
 
 		<!-- ============ HERO ============ -->
 		<section class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] mb-20 sm:mb-28">

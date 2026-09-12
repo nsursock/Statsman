@@ -11,6 +11,10 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link
+		rel="stylesheet"
+		href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css"
+	/>
 	<title>Statsman</title>
 </svelte:head>
 

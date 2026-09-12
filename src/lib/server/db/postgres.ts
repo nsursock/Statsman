@@ -164,16 +164,90 @@ async function buildStats(
 ): Promise<StatsSummary> {
 	const since = Date.now() - days * 24 * 60 * 60 * 1000;
 	const targetPoints = clampPoints(points);
+	const bucketMs = bucketMsForTarget(days, targetPoints);
 
-	const [totals] = await db`
-		SELECT COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'`;
+	// Fan out independent aggregates in one network RTT window (Supabase latency).
+	const [
+		totalsRows,
+		visitPages,
+		pathRows,
+		topReferrers,
+		browsers,
+		operatingSystems,
+		devices,
+		languages,
+		screens,
+		countries,
+		cities,
+		customEvents,
+		durationRows,
+		rawSeries
+	] = await Promise.all([
+		db`
+			SELECT COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'`,
+		db`
+			SELECT visitor_hash, COUNT(*)::int AS pages
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY visitor_hash`,
+		db`
+			SELECT path, COUNT(*)::int AS views FROM events
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY path`,
+		db`
+			SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS referrer, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY referrer ORDER BY views DESC LIMIT 10`,
+		db`
+			SELECT COALESCE(browser, 'Unknown') AS browser, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY browser ORDER BY views DESC LIMIT 8`,
+		db`
+			SELECT COALESCE(os, 'Unknown') AS os, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY os ORDER BY views DESC LIMIT 8`,
+		db`
+			SELECT COALESCE(device, 'Unknown') AS device, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY device ORDER BY views DESC LIMIT 8`,
+		db`
+			SELECT COALESCE(NULLIF(lang, ''), 'Unknown') AS label, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY lang ORDER BY views DESC LIMIT 8`,
+		db`
+			SELECT COALESCE(NULLIF(screen, ''), 'Unknown') AS label, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY screen ORDER BY views DESC LIMIT 8`,
+		db`
+			SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS label, COUNT(*)::int AS views
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY country ORDER BY views DESC LIMIT 12`,
+		db`
+			SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS city,
+				COALESCE(NULLIF(country, ''), '?') AS country,
+				AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*)::int AS views
+			FROM events
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+				AND lat IS NOT NULL AND lng IS NOT NULL
+			GROUP BY city, country ORDER BY views DESC LIMIT 40`,
+		db`
+			SELECT name AS label, COUNT(*)::int AS views FROM events
+			WHERE site_id = ${siteId} AND created_at >= ${since}
+				AND name NOT IN ('pageview', 'engagement')
+			GROUP BY name ORDER BY views DESC LIMIT 12`,
+		db`
+			SELECT visitor_hash, MAX(duration_ms)::int AS duration_ms FROM events
+			WHERE site_id = ${siteId} AND created_at >= ${since}
+				AND name = 'engagement' AND duration_ms IS NOT NULL
+			GROUP BY visitor_hash`,
+		db`
+			SELECT (created_at - (created_at % ${bucketMs}::bigint)) AS bucket,
+				COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			GROUP BY 1 ORDER BY 1 ASC`
+	]);
 
-	const visitPages = await db`
-		SELECT visitor_hash, COUNT(*)::int AS pages
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY visitor_hash`;
-
+	const totals = totalsRows[0] ?? { pageviews: 0, visitors: 0 };
 	const singlePageVisits = visitPages.filter((v) => v.pages === 1).length;
 	const bounceRate =
 		visitPages.length === 0 ? 0 : Math.round((singlePageVisits / visitPages.length) * 100);
@@ -184,70 +258,11 @@ async function buildStats(
 					(visitPages.reduce((sum, v) => sum + Number(v.pages), 0) / visitPages.length) * 10
 				) / 10;
 
-	const pathRows = await db`
-		SELECT path, COUNT(*)::int AS views FROM events
-		WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY path`;
 	const { topPages, campaigns, utmSources, utmMediums } = aggregatePathMeta(
 		pathRows.map((r) => ({ path: r.path as string, views: Number(r.views) })),
 		10
 	);
 
-	const topReferrers = await db`
-		SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS referrer, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY referrer ORDER BY views DESC LIMIT 10`;
-
-	const browsers = await db`
-		SELECT COALESCE(browser, 'Unknown') AS browser, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY browser ORDER BY views DESC LIMIT 8`;
-
-	const operatingSystems = await db`
-		SELECT COALESCE(os, 'Unknown') AS os, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY os ORDER BY views DESC LIMIT 8`;
-
-	const devices = await db`
-		SELECT COALESCE(device, 'Unknown') AS device, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY device ORDER BY views DESC LIMIT 8`;
-
-	const languages = await db`
-		SELECT COALESCE(NULLIF(lang, ''), 'Unknown') AS label, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY lang ORDER BY views DESC LIMIT 8`;
-
-	const screens = await db`
-		SELECT COALESCE(NULLIF(screen, ''), 'Unknown') AS label, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY screen ORDER BY views DESC LIMIT 8`;
-
-	const countries = await db`
-		SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS label, COUNT(*)::int AS views
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY country ORDER BY views DESC LIMIT 12`;
-
-	const cities = await db`
-		SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS city,
-			COALESCE(NULLIF(country, ''), '?') AS country,
-			AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*)::int AS views
-		FROM events
-		WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-			AND lat IS NOT NULL AND lng IS NOT NULL
-		GROUP BY city, country ORDER BY views DESC LIMIT 40`;
-
-	const customEvents = await db`
-		SELECT name AS label, COUNT(*)::int AS views FROM events
-		WHERE site_id = ${siteId} AND created_at >= ${since}
-			AND name NOT IN ('pageview', 'engagement')
-		GROUP BY name ORDER BY views DESC LIMIT 12`;
-
-	const durationRows = await db`
-		SELECT visitor_hash, MAX(duration_ms)::int AS duration_ms FROM events
-		WHERE site_id = ${siteId} AND created_at >= ${since}
-			AND name = 'engagement' AND duration_ms IS NOT NULL
-		GROUP BY visitor_hash`;
 	const avgVisitDurationSec =
 		durationRows.length === 0
 			? 0
@@ -256,13 +271,6 @@ async function buildStats(
 						durationRows.length /
 						1000
 				);
-
-	const bucketMs = bucketMsForTarget(days, targetPoints);
-	const rawSeries = await db`
-		SELECT (created_at - (created_at % ${bucketMs}::bigint)) AS bucket,
-			COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
-		FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
-		GROUP BY 1 ORDER BY 1 ASC`;
 
 	const timeseries = fillTimeseries(
 		days,
@@ -401,6 +409,56 @@ export async function createPostgresStore(): Promise<Store> {
 					${event.visitorHash},
 					${event.createdAt ?? Date.now()}
 				)`;
+		},
+
+		async insertEvents(events: EventInput[]) {
+			if (!events.length) return;
+			if (events.length === 1) {
+				await store.insertEvent(events[0]!);
+				return;
+			}
+			const rows = events.map((event) => ({
+				site_id: event.siteId,
+				name: event.name ?? 'pageview',
+				path: event.path,
+				referrer: event.referrer ?? null,
+				title: event.title ?? null,
+				lang: event.lang ?? null,
+				screen: event.screen ?? null,
+				browser: event.browser ?? null,
+				os: event.os ?? null,
+				device: event.device ?? null,
+				country: event.country ?? null,
+				city: event.city ?? null,
+				lat: event.lat ?? null,
+				lng: event.lng ?? null,
+				duration_ms: event.durationMs ?? null,
+				props: event.props ?? null,
+				visitor_hash: event.visitorHash,
+				created_at: event.createdAt ?? Date.now()
+			}));
+			await db`
+				INSERT INTO events ${db(
+					rows,
+					'site_id',
+					'name',
+					'path',
+					'referrer',
+					'title',
+					'lang',
+					'screen',
+					'browser',
+					'os',
+					'device',
+					'country',
+					'city',
+					'lat',
+					'lng',
+					'duration_ms',
+					'props',
+					'visitor_hash',
+					'created_at'
+				)}`;
 		},
 
 		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
