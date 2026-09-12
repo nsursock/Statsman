@@ -1,0 +1,9 @@
+# Force Dockerfile (not Nixpacks) so native deps match the image.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

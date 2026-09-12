@@ -22,6 +22,8 @@ COPY package.json package-lock.json ./
 COPY vendor ./vendor
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/build ./build
-RUN mkdir -p /data
+COPY scripts/railway-start.sh ./scripts/railway-start.sh
+RUN chmod +x ./scripts/railway-start.sh && mkdir -p /data
 EXPOSE 3000
-CMD ["node", "build"]
+# Listen on Railway's PORT (injected). HOST defaults to 0.0.0.0 in the start script.
+CMD ["./scripts/railway-start.sh"]

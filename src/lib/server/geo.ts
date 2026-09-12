@@ -1,26 +1,18 @@
-import geoip from 'geoip-lite';
+import type { GeoLookup } from './geo-types';
 
-export type GeoLookup = {
-	country: string | null;
-	city: string | null;
-	/** WGS84 degrees; null when unknown */
-	lat: number | null;
-	lng: number | null;
-};
+export type { GeoLookup } from './geo-types';
 
 function isNonPublicIp(ip: string): boolean {
 	const v = ip.replace(/^::ffff:/, '').toLowerCase();
 	if (!v || v === '127.0.0.1' || v === '::1' || v === '0.0.0.0') return true;
 	if (v.startsWith('10.') || v.startsWith('192.168.') || v.startsWith('169.254.')) return true;
 	if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(v)) return true;
-	// Fly private / IPv6 ULA
 	if (v.startsWith('fdaa:') || v.startsWith('fc') || v.startsWith('fd')) return true;
 	return false;
 }
 
 /**
- * Prefer Fly / proxy client IP headers — `getClientAddress()` alone often returns
- * the edge proxy on Fly unless ADDRESS_HEADER=fly-client-ip is set.
+ * Prefer proxy client IP headers — set ADDRESS_HEADER on the platform when needed.
  */
 export function resolveClientIp(request: Request, fallback: string): string {
 	const candidates = [
@@ -47,6 +39,8 @@ export function lookupGeo(ip: string | null | undefined): GeoLookup {
 		return { country: null, city: null, lat: null, lng: null };
 	}
 	try {
+		// Lazy-load: geoip-lite data files are large; don't pay at process boot.
+		const geoip = require('geoip-lite') as typeof import('geoip-lite');
 		const hit = geoip.lookup(cleaned);
 		if (!hit) return { country: null, city: null, lat: null, lng: null };
 		const [lat, lng] = hit.ll ?? [];
