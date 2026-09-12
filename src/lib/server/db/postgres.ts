@@ -1,17 +1,11 @@
 import postgres from 'postgres';
 import { randomBytes } from 'node:crypto';
-import { getPostgresConfig } from '$lib/server/config';
+import { getPostgresCandidates, type PostgresConfig } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
 import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
 import type { EventInput, RecentEvent, Site, StatsSummary, Store, User } from './types';
 
-function sql() {
-	const cfg = getPostgresConfig();
-	if (!cfg) {
-		throw new Error(
-			'Postgres not configured: set DATABASE_URL or PGHOST+PGUSER+PGPASSWORD (+ PGDATABASE/PGPORT)'
-		);
-	}
+function clientFor(cfg: PostgresConfig) {
 	const local =
 		cfg.kind === 'url'
 			? /@(localhost|127\.0\.0\.1)(:|\/)/i.test(cfg.url)
@@ -30,6 +24,37 @@ function sql() {
 		password: cfg.password,
 		...opts
 	});
+}
+
+/** Try DATABASE_URL first; on connect/auth failure fall back to PGHOST/PG*. */
+async function openSql(): Promise<postgres.Sql> {
+	const candidates = getPostgresCandidates();
+	if (!candidates.length) {
+		throw new Error(
+			'Postgres not configured: set DATABASE_URL or PGHOST+PGUSER+PGPASSWORD (+ PGDATABASE/PGPORT)'
+		);
+	}
+
+	let lastError: unknown;
+	for (let i = 0; i < candidates.length; i++) {
+		const cfg = candidates[i]!;
+		const db = clientFor(cfg);
+		try {
+			await db`SELECT 1`;
+			if (i > 0) {
+				console.warn(
+					'[statsman] DATABASE_URL failed; connected via PGHOST/PGUSER/PGPASSWORD'
+				);
+			}
+			return db;
+		} catch (err) {
+			lastError = err;
+			await db.end({ timeout: 2 }).catch(() => {});
+		}
+	}
+	throw lastError instanceof Error
+		? lastError
+		: new Error('Postgres connection failed for all configured sources');
 }
 
 async function migrate(db: postgres.Sql) {
@@ -270,7 +295,7 @@ async function buildStats(
 }
 
 export async function createPostgresStore(): Promise<Store> {
-	const db = sql();
+	const db = await openSql();
 	await migrate(db);
 
 	const store: Store = {

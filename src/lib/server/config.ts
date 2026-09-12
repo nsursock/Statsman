@@ -51,17 +51,15 @@ export type PostgresConfig =
 			password: string;
 	  };
 
-/**
- * Postgres via DATABASE_URL **or** discrete params (Supabase pooler-friendly).
- * Use PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD — never bare HOST
- * (HOST is the HTTP bind address for Railway, e.g. ::).
- */
-export function getPostgresConfig(): PostgresConfig | undefined {
+function readPostgresUrl(): PostgresConfig | undefined {
 	const url = (env.DATABASE_URL ?? '').trim();
 	if (url && /^postgres(ql)?:\/\//i.test(url)) {
 		return { kind: 'url', url };
 	}
+	return undefined;
+}
 
+function readPostgresParams(): PostgresConfig | undefined {
 	const host = (env.PGHOST || env.POSTGRES_HOST || '').trim();
 	const user = (env.PGUSER || env.POSTGRES_USER || '').trim();
 	const password = env.PGPASSWORD || env.POSTGRES_PASSWORD || '';
@@ -81,6 +79,25 @@ export function getPostgresConfig(): PostgresConfig | undefined {
 	return undefined;
 }
 
+/**
+ * Ordered connection attempts: DATABASE_URL first (if set), then discrete PG*.
+ * Use PGHOST / PGPORT / PGDATABASE / PGUSER / PGPASSWORD — never bare HOST
+ * (HOST is the HTTP bind address for Railway, e.g. ::).
+ */
+export function getPostgresCandidates(): PostgresConfig[] {
+	const out: PostgresConfig[] = [];
+	const url = readPostgresUrl();
+	const params = readPostgresParams();
+	if (url) out.push(url);
+	if (params) out.push(params);
+	return out;
+}
+
+/** First configured source (URL preferred when both exist). */
+export function getPostgresConfig(): PostgresConfig | undefined {
+	return getPostgresCandidates()[0];
+}
+
 /** @deprecated Prefer getPostgresConfig(); kept for health/debug display. */
 export function getDatabaseUrl(): string | undefined {
 	const cfg = getPostgresConfig();
@@ -94,7 +111,7 @@ export function getDatabasePath(): string {
 }
 
 export function usePostgres(): boolean {
-	return Boolean(getPostgresConfig());
+	return getPostgresCandidates().length > 0;
 }
 
 export function getStripeConfig() {
