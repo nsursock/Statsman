@@ -11,6 +11,134 @@
 		s.getAttribute('data-api') ||
 		s.src.replace(/\/tracker\.js(?:\?.*)?$/, '/api/event');
 
+	var OPTOUT_KEY = 'statsman_optout';
+	var optedOut = false;
+
+	function readCookie(name) {
+		try {
+			var parts = (';.cookie || '').split(';');
+			for (var i = 0; i < parts.length; i++) {
+				var p = parts[i].trim();
+				if (p.indexOf(name + '=') === 0) return decodeURIComponent(p.slice(name.length + 1));
+			}
+		} catch (e) {
+			/* ignore */
+		}
+		return null;
+	}
+
+	function writeCookie(name, value, days) {
+		try {
+			var maxAge = Math.floor((days || 3650) * 86400);
+			document.cookie =
+				name +
+				'=' +
+				encodeURIComponent(value) +
+				';path=/;max-age=' +
+				maxAge +
+				';SameSite=Lax';
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	function clearCookie(name) {
+		try {
+			document.cookie = name + '=;path=/;max-age=0;SameSite=Lax';
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	function storageGet(key) {
+		try {
+			return localStorage.getItem(key);
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function storageSet(key, value) {
+		try {
+			localStorage.setItem(key, value);
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	function storageRemove(key) {
+		try {
+			localStorage.removeItem(key);
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	function isOptedOut() {
+		if (optedOut) return true;
+		if (storageGet(OPTOUT_KEY) === 'true') return true;
+		if (readCookie(OPTOUT_KEY) === 'true') return true;
+		return false;
+	}
+
+	function disableTracking() {
+		optedOut = true;
+		storageSet(OPTOUT_KEY, 'true');
+		writeCookie(OPTOUT_KEY, 'true');
+	}
+
+	function enableTracking() {
+		optedOut = false;
+		storageRemove(OPTOUT_KEY);
+		clearCookie(OPTOUT_KEY);
+	}
+
+	function isDevHost() {
+		var h = (location.hostname || '').toLowerCase();
+		if (!h) return false;
+		if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h === '[::1]' || h === '::1') {
+			return true;
+		}
+		return h.slice(-6) === '.local';
+	}
+
+	var allowLocalhost =
+		s.hasAttribute('data-allow-localhost') &&
+		s.getAttribute('data-allow-localhost') !== 'false' &&
+		s.getAttribute('data-allow-localhost') !== '0';
+
+	// ?statsman_debug=1 → persistent browser opt-out (Preview site / admin debug)
+	try {
+		if (/(?:^|[?&])statsman_debug=1(?:&|$)/.test(location.search || '')) {
+			disableTracking();
+		}
+	} catch (e) {
+		/* ignore */
+	}
+
+	if (isOptedOut()) {
+		window.statsman = {
+			track: function () {},
+			disableTracking: disableTracking,
+			enableTracking: enableTracking,
+			isOptedOut: function () {
+				return true;
+			}
+		};
+		return;
+	}
+
+	// Development hosts are ignored unless the snippet opts in (demo lab).
+	if (isDevHost() && !allowLocalhost) {
+		window.statsman = {
+			track: function () {},
+			disableTracking: disableTracking,
+			enableTracking: enableTracking,
+			isOptedOut: isOptedOut
+		};
+		return;
+	}
+
 	var started = Date.now();
 	var engaged = false;
 	var engagedVisit = false;
@@ -33,6 +161,7 @@
 	}
 
 	function post(payload) {
+		if (isOptedOut()) return;
 		var body = JSON.stringify(payload);
 		if (typeof fetch === 'function') {
 			fetch(endpoint, {
@@ -50,6 +179,7 @@
 	}
 
 	function emit(name, data, opts) {
+		if (isOptedOut()) return;
 		opts = opts || {};
 		var m = meta();
 		var payload = {
@@ -100,7 +230,12 @@
 		emit(name, data);
 	}
 
-	window.statsman = { track: track };
+	window.statsman = {
+		track: track,
+		disableTracking: disableTracking,
+		enableTracking: enableTracking,
+		isOptedOut: isOptedOut
+	};
 
 	/* —— SPA route changes —— */
 	function onRouteChange() {

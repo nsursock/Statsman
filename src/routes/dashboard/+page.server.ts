@@ -8,8 +8,9 @@ import { billingEnabled } from '$lib/server/stripe';
 import { demoSeedEnabled, getDemoSite, seedDemoTraffic } from '$lib/server/demo';
 import { needsOnboarding, operatorSites } from '$lib/server/onboarding';
 import { parseChartParam, parsePointsParam } from '$lib/timeseries';
+import { resolveClientIp } from '$lib/server/geo';
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ url, locals, request, getClientAddress }) => {
 	if (isCloud()) {
 		if (!locals.user) redirect(303, '/login');
 	} else if (!locals.adminOk) {
@@ -73,6 +74,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		billingFlash: url.searchParams.get('billing'),
 		needsOnboarding: showOnboarding,
 		publicOrigin: getPublicOrigin(),
-		firstOperatorSite: sites[0] ?? null
+		firstOperatorSite: sites[0] ?? null,
+		clientIp: resolveClientIp(request, getClientAddress())
 	};
 };

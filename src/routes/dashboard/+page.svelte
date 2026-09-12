@@ -215,15 +215,39 @@
 
 	async function copyTracker() {
 		if (!data.site) return;
+		const allow =
+			data.site.ignore_localhost === false ? ' data-allow-localhost' : '';
 		try {
 			await navigator.clipboard.writeText(
-				`<script defer src="${origin}/tracker.js" data-site="${data.site.id}"></scr` + 'ipt>'
+				`<script defer src="${origin}/tracker.js" data-site="${data.site.id}"${allow}></scr` +
+					'ipt>'
 			);
 			copied = true;
 			setTimeout(() => (copied = false), 1600);
 		} catch {
 			/* clipboard unavailable */
 		}
+	}
+
+	async function saveTracking(patch: {
+		ignore_localhost?: boolean;
+		excluded_ips?: string[];
+	}) {
+		if (!data.site) throw new Error('No active site');
+		const res = await fetch(`/api/sites/${data.site.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(patch)
+		});
+		const payload = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			throw new Error(
+				typeof payload.message === 'string'
+					? payload.message
+					: 'Failed to save tracking settings'
+			);
+		}
+		await invalidateAll();
 	}
 </script>
 
@@ -257,6 +281,7 @@
 		activeSiteId={data.site?.id ?? null}
 		site={data.site}
 		{origin}
+		clientIp={data.clientIp}
 		demoEnabled={Boolean(data.demoSiteId)}
 		isCloud={data.isCloud}
 		billingEnabled={data.billingEnabled}
@@ -275,6 +300,7 @@
 		onCopyTracker={copyTracker}
 		onCheckout={checkout}
 		onPortal={portal}
+		onSaveTracking={saveTracking}
 		blockEscape={Boolean(pendingDelete)}
 	/>
 

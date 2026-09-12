@@ -44,7 +44,7 @@ export async function getDemoSite(): Promise<Site | undefined> {
 	const sites = await listSites();
 	const existing = sites.find((s) => s.name === DEMO_SITE_NAME);
 	if (existing) return existing;
-	return createSite(DEMO_SITE_NAME, demoHost());
+	return createSite(DEMO_SITE_NAME, demoHost(), null, { ignoreLocalhost: false });
 }
 
 /* ---------------- synthetic traffic ---------------- */

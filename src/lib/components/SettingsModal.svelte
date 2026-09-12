@@ -10,7 +10,13 @@
 
 	export type SettingsTab = 'sites' | 'tracker' | 'appearance' | 'demo' | 'account';
 
-	type Site = { id: string; name: string; domain: string };
+	type Site = {
+		id: string;
+		name: string;
+		domain: string;
+		excluded_ips?: string | string[];
+		ignore_localhost?: boolean;
+	};
 	type Usage = {
 		used: number;
 		limit: number;
@@ -21,6 +27,53 @@
 		overCap: boolean;
 	} | null;
 
+	const OPTOUT_KEY = 'statsman_optout';
+
+	function readOptOut(): boolean {
+		if (typeof document === 'undefined') return false;
+		try {
+			if (localStorage.getItem(OPTOUT_KEY) === 'true') return true;
+		} catch {
+			/* ignore */
+		}
+		try {
+			return document.cookie.split(';').some((c) => c.trim().startsWith(`${OPTOUT_KEY}=true`));
+		} catch {
+			return false;
+		}
+	}
+
+	function writeOptOut(enabled: boolean) {
+		try {
+			if (enabled) localStorage.setItem(OPTOUT_KEY, 'true');
+			else localStorage.removeItem(OPTOUT_KEY);
+		} catch {
+			/* ignore */
+		}
+		try {
+			document.cookie = enabled
+				? `${OPTOUT_KEY}=true;path=/;max-age=${3650 * 86400};SameSite=Lax`
+				: `${OPTOUT_KEY}=;path=/;max-age=0;SameSite=Lax`;
+		} catch {
+			/* ignore */
+		}
+		const api = (window as unknown as { statsman?: { disableTracking?: () => void; enableTracking?: () => void } })
+			.statsman;
+		if (enabled) api?.disableTracking?.();
+		else api?.enableTracking?.();
+	}
+
+	function parseIps(site: Site | null | undefined): string[] {
+		if (!site?.excluded_ips) return [];
+		if (Array.isArray(site.excluded_ips)) return site.excluded_ips.map(String);
+		try {
+			const parsed = JSON.parse(site.excluded_ips) as unknown;
+			return Array.isArray(parsed) ? parsed.map(String) : [];
+		} catch {
+			return [];
+		}
+	}
+
 	let {
 		open = false,
 		tab = $bindable<SettingsTab>('sites'),
@@ -28,6 +81,7 @@
 		activeSiteId = null,
 		site = null,
 		origin,
+		clientIp = null,
 		demoEnabled = false,
 		isCloud = false,
 		billingEnabled = false,
@@ -46,6 +100,7 @@
 		onCopyTracker,
 		onCheckout,
 		onPortal,
+		onSaveTracking,
 		blockEscape = false
 	}: {
 		open?: boolean;
@@ -54,6 +109,7 @@
 		activeSiteId?: string | null;
 		site?: Site | null;
 		origin: string;
+		clientIp?: string | null;
 		demoEnabled?: boolean;
 		isCloud?: boolean;
 		billingEnabled?: boolean;
@@ -72,6 +128,10 @@
 		onCopyTracker: () => void | Promise<void>;
 		onCheckout: (plan: 'indie' | 'creator') => void;
 		onPortal: () => void | Promise<void>;
+		onSaveTracking?: (patch: {
+			ignore_localhost?: boolean;
+			excluded_ips?: string[];
+		}) => void | Promise<void>;
 		/** When a higher-priority dialog (e.g. delete confirm) is open. */
 		blockEscape?: boolean;
 	} = $props();
@@ -79,12 +139,18 @@
 	let panelEl: HTMLDivElement | undefined = $state();
 	let theme = $state<ThemeId>('retrowave');
 	let contentKey = $state(0);
+	let browserExcluded = $state(false);
+	let ignoreLocalhost = $state(true);
+	let excludedIps = $state<string[]>([]);
+	let ipDraft = $state('');
+	let trackingSaving = $state(false);
+	let trackingMsg = $state('');
 
 	const tabs = $derived(
 		(
 			[
 				{ id: 'sites' as const, label: 'Sites', hint: 'Tracked properties' },
-				{ id: 'tracker' as const, label: 'Tracker', hint: 'Install snippet' },
+				{ id: 'tracker' as const, label: 'Tracker', hint: 'Install & exclusions' },
 				{ id: 'appearance' as const, label: 'Appearance', hint: 'Console theme' },
 				...(demoEnabled
 					? [{ id: 'demo' as const, label: 'Demo', hint: 'Public lab' }]
@@ -100,15 +166,31 @@
 
 	const tabIds = $derived(tabs.map((t) => t.id));
 	const activeMeta = $derived(tabs.find((t) => t.id === tab) ?? tabs[0]);
+	const allowLocalhostAttr = $derived(
+		site && site.ignore_localhost === false ? ' data-allow-localhost' : ''
+	);
 	const snippet = $derived(
 		site
-			? `<script defer src="${origin}/tracker.js" data-site="${site.id}"></scr` + 'ipt>'
+			? `<script defer src="${origin}/tracker.js" data-site="${site.id}"${allowLocalhostAttr}></scr` +
+					'ipt>'
 			: ''
+	);
+	const previewUrl = $derived(
+		site ? `https://${site.domain}/?statsman_debug=1` : ''
 	);
 
 	$effect(() => {
 		if (!open) return;
 		if (!tabIds.includes(tab)) tab = 'sites';
+	});
+
+	$effect(() => {
+		if (!open) return;
+		browserExcluded = readOptOut();
+		ignoreLocalhost = site?.ignore_localhost !== false;
+		excludedIps = parseIps(site);
+		ipDraft = '';
+		trackingMsg = '';
 	});
 
 	$effect(() => {
@@ -131,6 +213,75 @@
 	function pickTheme(id: ThemeId) {
 		theme = id;
 		applyTheme(id);
+	}
+
+	function toggleBrowserExclusion() {
+		const next = !browserExcluded;
+		writeOptOut(next);
+		browserExcluded = next;
+	}
+
+	async function persistTracking(patch: {
+		ignore_localhost?: boolean;
+		excluded_ips?: string[];
+	}) {
+		if (!onSaveTracking || !site) return;
+		trackingSaving = true;
+		trackingMsg = '';
+		try {
+			await onSaveTracking(patch);
+			trackingMsg = 'Saved.';
+		} catch (err) {
+			trackingMsg = err instanceof Error ? err.message : 'Save failed.';
+			throw err;
+		} finally {
+			trackingSaving = false;
+		}
+	}
+
+	async function toggleIgnoreLocalhost() {
+		const next = !ignoreLocalhost;
+		ignoreLocalhost = next;
+		try {
+			await persistTracking({ ignore_localhost: next });
+		} catch {
+			ignoreLocalhost = !next;
+		}
+	}
+
+	async function addExcludedIp() {
+		const ip = ipDraft.trim();
+		if (!ip) return;
+		if (excludedIps.includes(ip)) {
+			ipDraft = '';
+			return;
+		}
+		const prev = excludedIps;
+		const next = [...excludedIps, ip];
+		excludedIps = next;
+		ipDraft = '';
+		try {
+			await persistTracking({ excluded_ips: next });
+		} catch {
+			excludedIps = prev;
+		}
+	}
+
+	async function addMyIp() {
+		if (!clientIp) return;
+		ipDraft = clientIp;
+		await addExcludedIp();
+	}
+
+	async function removeExcludedIp(ip: string) {
+		const prev = excludedIps;
+		const next = excludedIps.filter((x) => x !== ip);
+		excludedIps = next;
+		try {
+			await persistTracking({ excluded_ips: next });
+		} catch {
+			excludedIps = prev;
+		}
 	}
 
 	function onPanelKeydown(e: KeyboardEvent) {
@@ -311,7 +462,7 @@
 										Paste this into
 										<strong class="text-[var(--scifi-text)]">{site.name}</strong>’s custom
 										code / header-footer setting (WordPress theme options, injection plugins,
-										etc.) — head or footer. ~1&nbsp;KB, zero cookies. Domain:
+										etc.) — head or footer. ~1&nbsp;KB, zero cookies by default. Domain:
 										<code class="text-scifi-cyan">{site.domain}</code>
 									</p>
 									<div class="snippet-block">
@@ -335,6 +486,140 @@
 									<pre class="snippet-code text-[0.7rem]">{`statsman.track('signup')
 statsman.track('newsletter_subscribe')
 statsman.track('purchase', { plan: 'indie' })`}</pre>
+
+									<div class="exclusion-block">
+										<p class="label-kicker mb-2">Traffic exclusions</p>
+										<p class="text-sm text-scifi-muted m-0 mb-3 leading-relaxed">
+											Statsman tracks visitors unless the browser explicitly opts out. Keep your
+											own development traffic out of production numbers.
+										</p>
+
+										<div class="exclusion-row">
+											<div class="min-w-0">
+												<p class="m-0 text-sm font-semibold">Exclude this browser</p>
+												<p class="m-0 mt-1 text-[0.7rem] text-scifi-muted leading-relaxed">
+													{#if browserExcluded}
+														This browser is opted out on the Statsman origin.
+													{:else}
+														Sets a persistent <code class="text-scifi-cyan">statsman_optout</code> flag
+														here. For your live site, use Preview site below.
+													{/if}
+												</p>
+											</div>
+											<button
+												type="button"
+												class="btn btn-sm {browserExcluded ? 'btn-ghost' : 'btn-primary'} shrink-0"
+												onclick={toggleBrowserExclusion}
+											>
+												{browserExcluded ? 'Enable tracking' : 'Exclude my visits'}
+											</button>
+										</div>
+
+										{#if previewUrl}
+											<div class="exclusion-row">
+												<div class="min-w-0">
+													<p class="m-0 text-sm font-semibold">Preview site</p>
+													<p class="m-0 mt-1 text-[0.7rem] text-scifi-muted leading-relaxed">
+														Opens your site with <code class="text-scifi-cyan">?statsman_debug=1</code> —
+														the tracker opts this browser out on that domain permanently.
+													</p>
+												</div>
+												<a
+													class="btn btn-sm btn-ghost shrink-0"
+													href={previewUrl}
+													target="_blank"
+													rel="noopener noreferrer"
+												>
+													Open preview
+												</a>
+											</div>
+										{/if}
+
+										<label class="exclusion-check">
+											<input
+												type="checkbox"
+												checked={ignoreLocalhost}
+												disabled={trackingSaving || !onSaveTracking}
+												onchange={toggleIgnoreLocalhost}
+											/>
+											<span>
+												<span class="block text-sm font-semibold">Ignore localhost / development traffic</span>
+												<span class="block text-[0.7rem] text-scifi-muted mt-0.5 leading-relaxed">
+													Skips <code class="text-scifi-cyan">localhost</code>,
+													<code class="text-scifi-cyan">127.0.0.1</code>, and
+													<code class="text-scifi-cyan">*.local</code>. Uncheck only if you
+													intentionally track a local blog — then re-copy the snippet (it adds
+													<code class="text-scifi-cyan">data-allow-localhost</code>).
+												</span>
+											</span>
+										</label>
+
+										<div class="mt-4">
+											<p class="m-0 text-sm font-semibold mb-1">Excluded IP addresses</p>
+											<p class="m-0 mb-2 text-[0.7rem] text-scifi-muted leading-relaxed">
+												Optional. Soft-drops matching requests at ingest. IPs are never stored on
+												events — only on this exclusion list. Prefer browser opt-out when you can.
+											</p>
+											{#if excludedIps.length}
+												<ul class="ip-list">
+													{#each excludedIps as ip (ip)}
+														<li>
+															<code>{ip}</code>
+															<button
+																type="button"
+																class="ip-remove"
+																disabled={trackingSaving}
+																onclick={() => removeExcludedIp(ip)}
+															>
+																Remove
+															</button>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+											<form
+												class="ip-add"
+												onsubmit={(e) => {
+													e.preventDefault();
+													void addExcludedIp();
+												}}
+											>
+												<input
+													class="input"
+													bind:value={ipDraft}
+													placeholder="203.0.113.10"
+													autocomplete="off"
+													disabled={trackingSaving || !onSaveTracking}
+												/>
+												<button
+													type="submit"
+													class="btn btn-sm btn-primary"
+													disabled={trackingSaving || !ipDraft.trim() || !onSaveTracking}
+												>
+													Add IP
+												</button>
+												{#if clientIp}
+													<button
+														type="button"
+														class="btn btn-sm btn-ghost"
+														disabled={trackingSaving || !onSaveTracking}
+														onclick={() => void addMyIp()}
+													>
+														Add my IP
+													</button>
+												{/if}
+											</form>
+											{#if clientIp}
+												<p class="m-0 mt-2 text-[0.65rem] text-scifi-muted font-mono">
+													Detected · {clientIp}
+												</p>
+											{/if}
+											{#if trackingMsg}
+												<p class="m-0 mt-2 text-xs text-scifi-cyan">{trackingMsg}</p>
+											{/if}
+										</div>
+									</div>
+
 									<p class="text-[0.65rem] text-scifi-muted mt-3 mb-0 font-mono">site · {site.id}</p>
 								{:else}
 									<div class="empty-pane">
@@ -733,6 +1018,71 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 		color: var(--scifi-cyan);
 		white-space: pre-wrap;
 		word-break: break-all;
+	}
+
+	.exclusion-block {
+		margin-top: 1.25rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--scifi-border);
+	}
+	.exclusion-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.85rem 0;
+		border-bottom: 1px solid var(--scifi-border);
+	}
+	.exclusion-check {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.65rem;
+		margin-top: 0.85rem;
+		cursor: pointer;
+	}
+	.exclusion-check input {
+		margin-top: 0.2rem;
+		accent-color: var(--scifi-primary);
+	}
+	.ip-list {
+		list-style: none;
+		margin: 0 0 0.65rem;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.ip-list li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.45rem 0.65rem;
+		border-radius: 8px;
+		border: 1px solid var(--scifi-border);
+		background: rgba(var(--scifi-bg-deep-rgb), 0.35);
+		font-size: 0.75rem;
+	}
+	.ip-remove {
+		border: 0;
+		background: transparent;
+		color: var(--scifi-muted);
+		font-size: 0.65rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.ip-remove:hover:not(:disabled) {
+		color: var(--scifi-error);
+	}
+	.ip-add {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+	.ip-add .input {
+		flex: 1 1 10rem;
+		min-width: 0;
 	}
 
 	.theme-grid {

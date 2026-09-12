@@ -7,6 +7,11 @@ import { isCloud } from '$lib/server/config';
 import { planLimits } from '$lib/server/plans';
 import { geoFromHeaders, resolveClientIp } from '$lib/server/geo';
 import { parseDurationMs, serializeEventProps } from '$lib/server/event-props';
+import {
+	ipIsExcluded,
+	isDevHostname,
+	siteIgnoresLocalhost
+} from '$lib/server/exclusions';
 
 const CORS = {
 	'Access-Control-Allow-Origin': '*',
@@ -40,6 +45,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		return new Response(null, { status: 204, headers: CORS });
 	}
 
+	// Soft-drop development traffic when the site opts into localhost ignoring (default).
+	if (siteIgnoresLocalhost(site) && host && isDevHostname(host)) {
+		return new Response(null, { status: 204, headers: CORS });
+	}
+
 	const eventName = body.name ? String(body.name).slice(0, 64) : 'pageview';
 	const isPageview = eventName === 'pageview';
 
@@ -59,6 +69,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const ua = request.headers.get('user-agent') ?? '';
 	const { browser, os, device } = parseUserAgent(ua);
 	const ip = resolveClientIp(request, getClientAddress());
+
+	if (ipIsExcluded(ip, site.excluded_ips)) {
+		return new Response(null, { status: 204, headers: CORS });
+	}
+
 	const daySalt = new Date().toISOString().slice(0, 10);
 	const geo = geoFromHeaders(request, ip);
 

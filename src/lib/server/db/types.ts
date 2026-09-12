@@ -21,6 +21,15 @@ export type Site = {
 	name: string;
 	domain: string;
 	created_at: number;
+	/** JSON array of IPs soft-dropped at ingest. Never written into events. */
+	excluded_ips: string;
+	/** When true (default), localhost / 127.0.0.1 / *.local traffic is ignored. */
+	ignore_localhost: boolean;
+};
+
+export type SiteTrackingPatch = {
+	excluded_ips?: string[];
+	ignore_localhost?: boolean;
 };
 
 export type EventInput = {
@@ -102,7 +111,13 @@ export type Usage = {
 export type Store = {
 	listSites(userId?: string | null): Promise<Site[]>;
 	getSite(id: string): Promise<Site | undefined>;
-	createSite(name: string, domain: string, userId?: string | null): Promise<Site>;
+	createSite(
+		name: string,
+		domain: string,
+		userId?: string | null,
+		opts?: { ignoreLocalhost?: boolean }
+	): Promise<Site>;
+	updateSiteTracking(id: string, patch: SiteTrackingPatch): Promise<Site | undefined>;
 	deleteSite(id: string): Promise<boolean>;
 	countSitesForUser(userId: string): Promise<number>;
 	insertEvent(event: EventInput): Promise<void>;

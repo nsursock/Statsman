@@ -10,10 +10,25 @@ import type {
 	RecentEvent,
 	Session,
 	Site,
+	SiteTrackingPatch,
 	StatsSummary,
 	Store,
 	User
 } from './types';
+import { serializeExcludedIps } from '$lib/server/exclusions';
+
+function mapSite(row: Record<string, unknown> | undefined): Site | undefined {
+	if (!row) return undefined;
+	return {
+		id: String(row.id),
+		user_id: (row.user_id as string | null) ?? null,
+		name: String(row.name),
+		domain: String(row.domain),
+		created_at: Number(row.created_at),
+		excluded_ips: typeof row.excluded_ips === 'string' ? row.excluded_ips : '[]',
+		ignore_localhost: row.ignore_localhost === 0 || row.ignore_localhost === false ? false : true
+	};
+}
 
 function openSqlite(): Database.Database {
 	const path = resolve(getDatabasePath());
@@ -93,6 +108,12 @@ function migrate(db: Database.Database) {
 	if (!siteCols.some((c) => c.name === 'user_id')) {
 		db.exec(`ALTER TABLE sites ADD COLUMN user_id TEXT`);
 	}
+	if (!siteCols.some((c) => c.name === 'excluded_ips')) {
+		db.exec(`ALTER TABLE sites ADD COLUMN excluded_ips TEXT NOT NULL DEFAULT '[]'`);
+	}
+	if (!siteCols.some((c) => c.name === 'ignore_localhost')) {
+		db.exec(`ALTER TABLE sites ADD COLUMN ignore_localhost INTEGER NOT NULL DEFAULT 1`);
+	}
 
 	const eventCols = new Set(
 		(db.prepare(`PRAGMA table_info(events)`).all() as { name: string }[]).map((c) => c.name)
@@ -128,8 +149,13 @@ function migrate(db: Database.Database) {
 	if (siteCount.c === 0) {
 		const id = randomBytes(8).toString('hex');
 		db.prepare(
-			'INSERT INTO sites (id, user_id, name, domain, created_at) VALUES (?, NULL, ?, ?, ?)'
+			`INSERT INTO sites (id, user_id, name, domain, created_at, excluded_ips, ignore_localhost)
+			 VALUES (?, NULL, ?, ?, ?, '[]', 0)`
 		).run(id, 'Demo Site', 'localhost', Date.now());
+	} else {
+		db.prepare(
+			`UPDATE sites SET ignore_localhost = 0 WHERE name = ? AND ignore_localhost != 0`
+		).run('Demo Site');
 	}
 }
 
@@ -325,24 +351,66 @@ export function createSqliteStore(): Store {
 	return {
 		async listSites(userId) {
 			if (userId) {
-				return db
-					.prepare('SELECT * FROM sites WHERE user_id = ? ORDER BY created_at DESC')
-					.all(userId) as Site[];
+				return (
+					db
+						.prepare('SELECT * FROM sites WHERE user_id = ? ORDER BY created_at DESC')
+						.all(userId) as Record<string, unknown>[]
+				)
+					.map((r) => mapSite(r)!)
+					.filter(Boolean);
 			}
-			return db.prepare('SELECT * FROM sites ORDER BY created_at DESC').all() as Site[];
+			return (db.prepare('SELECT * FROM sites ORDER BY created_at DESC').all() as Record<
+				string,
+				unknown
+			>[])
+				.map((r) => mapSite(r)!)
+				.filter(Boolean);
 		},
 
 		async getSite(id) {
-			return db.prepare('SELECT * FROM sites WHERE id = ?').get(id) as Site | undefined;
+			return mapSite(
+				db.prepare('SELECT * FROM sites WHERE id = ?').get(id) as Record<string, unknown> | undefined
+			);
 		},
 
-		async createSite(name, domain, userId = null) {
+		async createSite(name, domain, userId = null, opts) {
 			const id = randomBytes(8).toString('hex');
 			const created_at = Date.now();
+			const ignoreLocalhost = opts?.ignoreLocalhost === false ? 0 : 1;
 			db.prepare(
-				'INSERT INTO sites (id, user_id, name, domain, created_at) VALUES (?, ?, ?, ?, ?)'
-			).run(id, userId, name, domain, created_at);
-			return { id, user_id: userId, name, domain, created_at };
+				`INSERT INTO sites (id, user_id, name, domain, created_at, excluded_ips, ignore_localhost)
+				 VALUES (?, ?, ?, ?, ?, '[]', ?)`
+			).run(id, userId, name, domain, created_at, ignoreLocalhost);
+			return {
+				id,
+				user_id: userId,
+				name,
+				domain,
+				created_at,
+				excluded_ips: '[]',
+				ignore_localhost: ignoreLocalhost === 1
+			};
+		},
+
+		async updateSiteTracking(id, patch: SiteTrackingPatch) {
+			const current = await this.getSite(id);
+			if (!current) return undefined;
+			const excluded =
+				patch.excluded_ips !== undefined
+					? serializeExcludedIps(patch.excluded_ips)
+					: current.excluded_ips;
+			const ignore =
+				patch.ignore_localhost !== undefined
+					? patch.ignore_localhost
+						? 1
+						: 0
+					: current.ignore_localhost
+						? 1
+						: 0;
+			db.prepare(
+				`UPDATE sites SET excluded_ips = ?, ignore_localhost = ? WHERE id = ?`
+			).run(excluded, ignore, id);
+			return this.getSite(id);
 		},
 
 		async deleteSite(id) {

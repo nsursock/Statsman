@@ -5,6 +5,7 @@ import type { Store } from './types';
 export type {
 	EventInput,
 	Site,
+	SiteTrackingPatch,
 	StatsSummary,
 	Store,
 	User,
@@ -47,8 +48,20 @@ export async function getSite(id: string) {
 	return (await getStore()).getSite(id);
 }
 
-export async function createSite(name: string, domain: string, userId?: string | null) {
-	return (await getStore()).createSite(name, domain, userId);
+export async function createSite(
+	name: string,
+	domain: string,
+	userId?: string | null,
+	opts?: { ignoreLocalhost?: boolean }
+) {
+	return (await getStore()).createSite(name, domain, userId, opts);
+}
+
+export async function updateSiteTracking(
+	id: string,
+	patch: import('./types').SiteTrackingPatch
+) {
+	return (await getStore()).updateSiteTracking(id, patch);
 }
 
 export async function deleteSite(id: string) {

@@ -109,6 +109,7 @@ Over-cap ingest returns `204` (blogs stay green); dashboard shows an upgrade ban
 ## Security
 
 - **Domain allowlist** on `/api/event` when `Origin` / `Referer` is present (site domain must match the blog host)
+- **Traffic exclusions** — browser opt-out (`statsman_optout` / `statsman.disableTracking()`), localhost/dev host ignore (default on), optional per-site excluded IPs (filter-only; never stored on events)
 - **CSRF origin check disabled** for tracker beacons (`text/plain` cross-origin POSTs); allowlist above is the gate
 - **Site ownership** in cloud (users → sites)
 - **Optional `ADMIN_TOKEN`** locks self-host dashboard + site CRUD

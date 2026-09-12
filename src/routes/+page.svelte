@@ -118,7 +118,7 @@
 	/>
 	{#if data.demo}
 		<!-- Dogfood: this landing page is tracked by the demo site. Your visit just fired a real event. -->
-		<script defer src="/tracker.js" data-site={data.demo.id}></script>
+		<script defer src="/tracker.js" data-site={data.demo.id} data-allow-localhost></script>
 	{/if}
 </svelte:head>
 

@@ -21,7 +21,7 @@
 		content="A fictional indie blog, tracked for real by this Statsman instance. Every click fires an actual event."
 	/>
 	<!-- Dogfood: this fake blog is tracked by the real tracker, same as any customer site. -->
-	<script defer src="/tracker.js" data-site={data.siteId}></script>
+	<script defer src="/tracker.js" data-site={data.siteId} data-allow-localhost></script>
 </svelte:head>
 
 <main bind:this={root} class="relative min-h-screen bg-[var(--scifi-bg)] text-[var(--scifi-text)] pb-36">

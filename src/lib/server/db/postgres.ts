@@ -3,7 +3,21 @@ import { randomBytes } from 'node:crypto';
 import { getPostgresCandidates, type PostgresConfig } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
 import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
-import type { EventInput, RecentEvent, Site, StatsSummary, Store, User } from './types';
+import type { EventInput, RecentEvent, Site, SiteTrackingPatch, StatsSummary, Store, User } from './types';
+import { serializeExcludedIps } from '$lib/server/exclusions';
+
+function mapSite(row: Record<string, unknown> | undefined): Site | undefined {
+	if (!row) return undefined;
+	return {
+		id: String(row.id),
+		user_id: (row.user_id as string | null) ?? null,
+		name: String(row.name),
+		domain: String(row.domain),
+		created_at: Number(row.created_at),
+		excluded_ips: typeof row.excluded_ips === 'string' ? row.excluded_ips : '[]',
+		ignore_localhost: row.ignore_localhost === false || row.ignore_localhost === 0 ? false : true
+	};
+}
 
 function clientFor(cfg: PostgresConfig) {
 	const local =
@@ -118,6 +132,8 @@ async function migrate(db: postgres.Sql) {
 	await db`ALTER TABLE events ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION`;
 	await db`ALTER TABLE events ADD COLUMN IF NOT EXISTS duration_ms INTEGER`;
 	await db`ALTER TABLE events ADD COLUMN IF NOT EXISTS props TEXT`;
+	await db`ALTER TABLE sites ADD COLUMN IF NOT EXISTS excluded_ips TEXT NOT NULL DEFAULT '[]'`;
+	await db`ALTER TABLE sites ADD COLUMN IF NOT EXISTS ignore_localhost BOOLEAN NOT NULL DEFAULT true`;
 	await db`
 		CREATE TABLE IF NOT EXISTS usage_monthly (
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -133,8 +149,10 @@ async function migrate(db: postgres.Sql) {
 	if (c === 0) {
 		const id = randomBytes(8).toString('hex');
 		await db`
-			INSERT INTO sites (id, user_id, name, domain, created_at)
-			VALUES (${id}, NULL, ${'Demo Site'}, ${'localhost'}, ${Date.now()})`;
+			INSERT INTO sites (id, user_id, name, domain, created_at, excluded_ips, ignore_localhost)
+			VALUES (${id}, NULL, ${'Demo Site'}, ${'localhost'}, ${Date.now()}, ${'[]'}, ${false})`;
+	} else {
+		await db`UPDATE sites SET ignore_localhost = false WHERE name = ${'Demo Site'} AND ignore_localhost = true`;
 	}
 }
 
@@ -303,21 +321,48 @@ export async function createPostgresStore(): Promise<Store> {
 			const rows = userId
 				? await db`SELECT * FROM sites WHERE user_id = ${userId} ORDER BY created_at DESC`
 				: await db`SELECT * FROM sites ORDER BY created_at DESC`;
-			return rows as unknown as Site[];
+			return rows
+				.map((r) => mapSite(r as unknown as Record<string, unknown>))
+				.filter((s): s is Site => Boolean(s));
 		},
 
 		async getSite(id) {
 			const [row] = await db`SELECT * FROM sites WHERE id = ${id}`;
-			return row as Site | undefined;
+			return mapSite(row as unknown as Record<string, unknown> | undefined);
 		},
 
-		async createSite(name, domain, userId = null) {
+		async createSite(name, domain, userId = null, opts) {
 			const id = randomBytes(8).toString('hex');
 			const created_at = Date.now();
+			const ignoreLocalhost = opts?.ignoreLocalhost !== false;
 			await db`
-				INSERT INTO sites (id, user_id, name, domain, created_at)
-				VALUES (${id}, ${userId}, ${name}, ${domain}, ${created_at})`;
-			return { id, user_id: userId, name, domain, created_at };
+				INSERT INTO sites (id, user_id, name, domain, created_at, excluded_ips, ignore_localhost)
+				VALUES (${id}, ${userId}, ${name}, ${domain}, ${created_at}, ${'[]'}, ${ignoreLocalhost})`;
+			return {
+				id,
+				user_id: userId,
+				name,
+				domain,
+				created_at,
+				excluded_ips: '[]',
+				ignore_localhost: ignoreLocalhost
+			};
+		},
+
+		async updateSiteTracking(id, patch: SiteTrackingPatch) {
+			const current = await this.getSite(id);
+			if (!current) return undefined;
+			const excluded =
+				patch.excluded_ips !== undefined
+					? serializeExcludedIps(patch.excluded_ips)
+					: current.excluded_ips;
+			const ignore =
+				patch.ignore_localhost !== undefined ? patch.ignore_localhost : current.ignore_localhost;
+			await db`
+				UPDATE sites
+				SET excluded_ips = ${excluded}, ignore_localhost = ${ignore}
+				WHERE id = ${id}`;
+			return this.getSite(id);
 		},
 
 		async deleteSite(id) {
