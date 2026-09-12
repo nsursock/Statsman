@@ -34,9 +34,7 @@
 	});
 </script>
 
-<div class="metric-card" data-enter>
-	<div class="card-head">
-		<div class="card-label"><span class="label-bar"></span> {label}</div>
-	</div>
-	<div class="card-value">{display}{suffix}</div>
+<div class="stat-tile glass rounded-lg" data-enter>
+	<div class="stat-value text-lg sm:text-xl">{display}{suffix}</div>
+	<div class="stat-label">{label}</div>
 </div>

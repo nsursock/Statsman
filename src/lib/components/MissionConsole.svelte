@@ -80,11 +80,7 @@
 	const maxCampaignViews = $derived(Math.max(1, ...stats.campaigns.map((r) => r.views), 1));
 	const maxCountryViews = $derived(Math.max(1, ...stats.countries.map((r) => r.views), 1));
 	const maxEventViews = $derived(Math.max(1, ...stats.customEvents.map((r) => r.views), 1));
-
-	function techLine(e: EventRow): string {
-		const geo = [e.city, e.country ? countryName(e.country) : null].filter(Boolean).join(', ');
-		return [e.browser, e.os, e.device, geo].filter(Boolean).join(' · ') || '—';
-	}
+	const maxCityViews = $derived(Math.max(1, stats.cities[0]?.views ?? 1));
 
 	function streamLabel(e: EventRow): string {
 		if (e.name && e.name !== 'pageview') return e.name;
@@ -102,130 +98,60 @@
 	}
 </script>
 
-<section class="mission-deck" data-deck>
-	<div class="mission-head">
-		<div class="min-w-0">
-			<p class="label-kicker text-scifi-primary m-0 mb-1">{kicker}</p>
-			<h1
-				class="hero-title hero-title-glitch text-3xl sm:text-4xl font-extrabold tracking-tight leading-none m-0"
-				data-text={site.name.toUpperCase()}
-			>
-				{site.name.toUpperCase()}
-			</h1>
-			<p class="text-scifi-muted text-[0.7rem] tracking-[0.14em] uppercase mt-2 mb-0">
-				{site.domain} · last {days}d · {stats.pageviews.toLocaleString()} hits
-			</p>
-		</div>
-		<div class="mission-meta">
-			<span class="status-chip">
-				<span
-					class="dot"
-					style={live
-						? ''
-						: 'background: var(--scifi-muted); box-shadow: none; animation: none;'}
-				></span>
-				{live ? 'ingesting' : 'frozen'}
-			</span>
-		</div>
-	</div>
-	<div class="mission-metrics">
-		<StatCard label="Pageviews" value={stats.pageviews} />
-		<StatCard label="Visitors" value={stats.visitors} />
-		<StatCard label="Bounce rate" value={stats.bounceRate} suffix="%" />
-		<StatCard label="Pages / visit" value={stats.avgPagesPerVisit} />
-		<StatCard
-			label="Avg duration"
-			value={formatDuration(stats.avgVisitDurationSec ?? 0)}
-		/>
-	</div>
-</section>
-
-<section class="signal-panel" data-deck>
-	<div class="pane-header !bg-transparent">
-		<span class="pane-title"><span class="pane-title-bar"></span> Signal over time</span>
-		<span class="legend">
-			<span class="legend-item">
-				<span class="legend-line legend-pv"></span> pageviews
-			</span>
-			<span class="legend-item">
-				<span class="legend-line legend-vis"></span> visitors
-			</span>
-		</span>
-	</div>
-	<div class="signal-chart">
-		<div class="pane-scan"></div>
-		<Sparkline data={stats.timeseries} />
-	</div>
-</section>
-
-<section class="globe-panel" data-deck>
+<!-- Hero-style live signal (full bleed) -->
+<section class="console-panel" data-deck aria-label="Live analytics">
 	<div class="pane-header">
-		<span class="pane-title"><span class="pane-title-bar"></span> Earth</span>
-		<span class="text-scifi-muted text-[0.62rem] tracking-[0.12em] uppercase">
-			{stats.cities.length} cities · {stats.countries.length} countries
+		<span class="pane-title"><span class="pane-title-bar"></span> Live signal</span>
+		<span class="status-chip">
+			<span
+				class="dot"
+				style={live
+					? ''
+					: 'background: var(--scifi-muted); box-shadow: none; animation: none;'}
+			></span>
+			{live ? 'ingesting' : 'frozen'}
 		</span>
 	</div>
-	<div class="globe-layout">
-		<GeoGlobe cities={stats.cities} height={360} />
-		<div class="geo-columns">
-			<div class="rank-body !pt-0 geo-col">
-				<p class="label-kicker m-0 mb-2">Countries</p>
-				{#each stats.countries.slice(0, 10) as row, i}
-					<div class="rank-row">
-						<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
-						<div class="rank-main min-w-0">
-							<div class="flex justify-between gap-2 text-xs mb-1">
-								<span class="truncate" title={row.label}>{countryName(row.label)}</span>
-								<span class="text-scifi-muted tabular-nums shrink-0"
-									>{row.views.toLocaleString()}</span
-								>
-							</div>
-							<div class="meter-track">
-								<div
-									class="meter-fill meter-fill-cyan"
-									style="width: {(row.views / maxCountryViews) * 100}%"
-								></div>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<p class="text-scifi-muted text-xs m-0">No country data yet</p>
-				{/each}
+	<div class="p-4 sm:p-5">
+		<p class="text-xs text-scifi-cyan mb-1 min-h-4 m-0">
+			$ {kicker.replace(/^\/\/\s*/, '')} — {site.domain}
+			<span class="text-scifi-success"> ✓ last {days}d</span>
+		</p>
+		<h1
+			class="hero-title text-2xl sm:text-3xl font-extrabold tracking-tight leading-none m-0 mb-4"
+		>
+			{site.name.toUpperCase()}
+		</h1>
+
+		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+			<StatCard label="Pageviews" value={stats.pageviews} />
+			<StatCard label="Visitors" value={stats.visitors} />
+			<StatCard label="Bounce rate" value={stats.bounceRate} suffix="%" />
+			<StatCard label="Pages / visit" value={stats.avgPagesPerVisit} />
+			<StatCard label="Avg duration" value={formatDuration(stats.avgVisitDurationSec ?? 0)} />
+		</div>
+
+		<div class="glass rounded-lg p-2 mb-1 relative">
+			<div class="pane-scan"></div>
+			<div class="flex items-center justify-between gap-2 px-1 pb-1">
+				<span class="text-[0.62rem] tracking-[0.18em] uppercase text-scifi-muted">Signal</span>
+				<span class="legend">
+					<span class="legend-item">
+						<span class="legend-line legend-pv"></span> pageviews
+					</span>
+					<span class="legend-item">
+						<span class="legend-line legend-vis"></span> visitors
+					</span>
+				</span>
 			</div>
-			<div class="rank-body !pt-0 geo-col">
-				<p class="label-kicker m-0 mb-2">Cities</p>
-				{#each stats.cities.slice(0, 10) as row, i}
-					<div class="rank-row">
-						<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
-						<div class="rank-main min-w-0">
-							<div class="flex justify-between gap-2 text-xs mb-1">
-								<span
-									class="truncate"
-									title="{row.city} · {countryName(row.country)} · {row.lat.toFixed(2)}°, {row.lng.toFixed(2)}°"
-									>{row.city}</span
-								>
-								<span class="text-scifi-muted tabular-nums shrink-0"
-									>{row.views.toLocaleString()}</span
-								>
-							</div>
-							<div class="meter-track">
-								<div
-									class="meter-fill"
-									style="width: {(row.views / Math.max(1, stats.cities[0]?.views ?? 1)) * 100}%"
-								></div>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<p class="text-scifi-muted text-xs m-0">No city data yet</p>
-				{/each}
-			</div>
+			<Sparkline data={stats.timeseries} />
 		</div>
 	</div>
 </section>
 
-<div class="bento" data-deck>
-	<section class="stream-panel">
+<!-- Masonry deck -->
+<div class="masonry" data-deck>
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Event stream</span>
 			<span class="status-chip">
@@ -238,23 +164,22 @@
 				{live ? 'live' : 'paused'}
 			</span>
 		</div>
-		<ul class="stream-list">
-			{#each recentEvents as e (e.id)}
-				<li class="stream-row">
-					<span class="stream-time">{relTime(e.created_at)}</span>
-					<span class="stream-main min-w-0">
-						<span class="stream-path truncate" title={e.path}>{streamLabel(e)}</span>
-						<span class="stream-tech truncate">{techLine(e)}</span>
-					</span>
-					<span class="stream-ref truncate">{e.referrer ?? 'direct'}</span>
-				</li>
-			{:else}
-				<li class="stream-empty">{emptyStream}</li>
-			{/each}
-		</ul>
+		<div class="p-4 sm:p-5">
+			<ul class="space-y-1.5 text-xs m-0 p-0 list-none">
+				{#each recentEvents.slice(0, 12) as e (e.id)}
+					<li class="feed-row grid grid-cols-[4.5rem_1fr_auto] gap-2 items-baseline">
+						<span class="text-scifi-muted tabular-nums">{relTime(e.created_at)}</span>
+						<span class="truncate" title={e.path}>{streamLabel(e)}</span>
+						<span class="text-scifi-cyan truncate max-w-32">{e.referrer ?? 'direct'}</span>
+					</li>
+				{:else}
+					<li class="text-scifi-muted">{emptyStream}</li>
+				{/each}
+			</ul>
+		</div>
 	</section>
 
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Top pages</span>
 		</div>
@@ -277,10 +202,70 @@
 			{/each}
 		</div>
 	</section>
-</div>
 
-<div class="bento" data-deck>
-	<section class="rank-panel">
+	<section class="console-panel masonry-item masonry-wide">
+		<div class="pane-header">
+			<span class="pane-title"><span class="pane-title-bar"></span> Earth</span>
+			<span class="text-scifi-muted text-[0.62rem] tracking-[0.12em] uppercase">
+				{stats.cities.length} cities · {stats.countries.length} countries
+			</span>
+		</div>
+		<div class="p-3 sm:p-4">
+			<GeoGlobe cities={stats.cities} height={280} />
+			<div class="geo-split mt-3">
+				<div>
+					<p class="label-kicker m-0 mb-2">Countries</p>
+					{#each stats.countries.slice(0, 6) as row, i}
+						<div class="rank-row">
+							<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
+							<div class="rank-main min-w-0">
+								<div class="flex justify-between gap-2 text-xs mb-1">
+									<span class="truncate">{countryName(row.label)}</span>
+									<span class="text-scifi-muted tabular-nums shrink-0"
+										>{row.views.toLocaleString()}</span
+									>
+								</div>
+								<div class="meter-track">
+									<div
+										class="meter-fill meter-fill-cyan"
+										style="width: {(row.views / maxCountryViews) * 100}%"
+									></div>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<p class="text-scifi-muted text-xs m-0">No country data yet</p>
+					{/each}
+				</div>
+				<div>
+					<p class="label-kicker m-0 mb-2">Cities</p>
+					{#each stats.cities.slice(0, 6) as row, i}
+						<div class="rank-row">
+							<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
+							<div class="rank-main min-w-0">
+								<div class="flex justify-between gap-2 text-xs mb-1">
+									<span class="truncate">{row.city}</span>
+									<span class="text-scifi-muted tabular-nums shrink-0"
+										>{row.views.toLocaleString()}</span
+									>
+								</div>
+								<div class="meter-track">
+									<div
+										class="meter-fill"
+										style="width: {(row.views / maxCityViews) * 100}%"
+									></div>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<p class="text-scifi-muted text-xs m-0">No city data yet</p>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Referrers</span>
 		</div>
@@ -307,15 +292,15 @@
 		</div>
 	</section>
 
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Campaigns</span>
 		</div>
-		<div class="rank-body grid sm:grid-cols-3 gap-5">
-			<div class="space-y-2.5">
-				<p class="label-kicker m-0">Sources</p>
+		<div class="rank-body space-y-4">
+			<div>
+				<p class="label-kicker m-0 mb-2">Sources</p>
 				{#each stats.utmSources.slice(0, 5) as row}
-					<div>
+					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
 							<span class="text-scifi-muted tabular-nums shrink-0">{row.views.toLocaleString()}</span>
@@ -331,10 +316,10 @@
 					<p class="text-scifi-muted text-xs m-0">No UTM sources yet</p>
 				{/each}
 			</div>
-			<div class="space-y-2.5">
-				<p class="label-kicker m-0">Mediums</p>
+			<div>
+				<p class="label-kicker m-0 mb-2">Mediums</p>
 				{#each stats.utmMediums.slice(0, 5) as row}
-					<div>
+					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
 							<span class="text-scifi-muted tabular-nums shrink-0">{row.views.toLocaleString()}</span>
@@ -350,10 +335,10 @@
 					<p class="text-scifi-muted text-xs m-0">No mediums yet</p>
 				{/each}
 			</div>
-			<div class="space-y-2.5">
-				<p class="label-kicker m-0">Campaigns</p>
+			<div>
+				<p class="label-kicker m-0 mb-2">Campaigns</p>
 				{#each stats.campaigns.slice(0, 5) as row}
-					<div>
+					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
 							<span class="text-scifi-muted tabular-nums shrink-0">{row.views.toLocaleString()}</span>
@@ -368,10 +353,8 @@
 			</div>
 		</div>
 	</section>
-</div>
 
-<div class="bento bento-3" data-deck>
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Browsers</span>
 		</div>
@@ -392,7 +375,7 @@
 		</div>
 	</section>
 
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> OS</span>
 		</div>
@@ -416,7 +399,7 @@
 		</div>
 	</section>
 
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Devices</span>
 		</div>
@@ -439,10 +422,8 @@
 			{/each}
 		</div>
 	</section>
-</div>
 
-<div class="bento bento-2" data-deck>
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Languages</span>
 		</div>
@@ -463,7 +444,7 @@
 		</div>
 	</section>
 
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Screens</span>
 		</div>
@@ -486,10 +467,8 @@
 			{/each}
 		</div>
 	</section>
-</div>
 
-<div class="bento bento-single" data-deck>
-	<section class="rank-panel">
+	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Custom events</span>
 		</div>
@@ -518,81 +497,66 @@
 </div>
 
 <style>
-	.mission-deck,
-	.signal-panel,
-	.globe-panel,
-	.stream-panel,
-	.rank-panel {
-		position: relative;
-		overflow: hidden;
-		border-radius: 14px;
-		border: 1px solid var(--scifi-border-accent);
-		background: linear-gradient(
-			165deg,
-			rgba(var(--scifi-surface-1-rgb), 0.78),
-			rgba(var(--scifi-surface-2-rgb), 0.9)
-		);
-		box-shadow: 0 16px 48px -24px rgba(var(--scifi-shadow-rgb), 0.5);
+	.masonry {
+		columns: 1;
+		column-gap: 1rem;
+		margin-top: 1rem;
 	}
-
-	.mission-deck {
-		padding: 1.25rem 1.25rem 1.15rem;
-	}
-	.mission-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 0.75rem;
-		margin-bottom: 1.1rem;
-	}
-	.mission-metrics {
-		display: grid;
-		gap: 0.65rem;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-	@media (min-width: 1024px) {
-		.mission-metrics {
-			grid-template-columns: repeat(5, minmax(0, 1fr));
+	@media (min-width: 720px) {
+		.masonry {
+			columns: 2;
 		}
-	}
-
-	.signal-panel :global(.pane-header) {
-		border-bottom: 1px solid var(--scifi-border);
-		background: transparent;
-	}
-	.signal-chart {
-		position: relative;
-		padding: 0.75rem 0.85rem 1rem;
-	}
-	.globe-layout {
-		display: grid;
-		gap: 0.75rem;
-		padding: 0.75rem 0.85rem 1rem;
-	}
-	.geo-columns {
-		display: grid;
-		gap: 0.85rem;
-		grid-template-columns: 1fr 1fr;
-		min-height: 0;
-	}
-	.geo-col {
-		max-height: 360px;
-		overflow: auto;
-		padding-left: 0;
-		padding-right: 0.25rem;
 	}
 	@media (min-width: 1100px) {
-		.globe-layout {
-			grid-template-columns: 1.35fr 1fr;
-			align-items: stretch;
+		.masonry {
+			columns: 3;
 		}
 	}
-	@media (max-width: 700px) {
-		.geo-columns {
+
+	.masonry-item {
+		break-inside: avoid;
+		-webkit-column-break-inside: avoid;
+		page-break-inside: avoid;
+		margin-bottom: 1rem;
+		display: inline-block;
+		width: 100%;
+		vertical-align: top;
+	}
+
+	/* Prefer native CSS masonry when available */
+	@supports (grid-template-rows: masonry) {
+		.masonry {
+			display: grid;
 			grid-template-columns: 1fr;
+			grid-template-rows: masonry;
+			gap: 1rem;
+			columns: unset;
+		}
+		@media (min-width: 720px) {
+			.masonry {
+				grid-template-columns: 1fr 1fr;
+			}
+		}
+		@media (min-width: 1100px) {
+			.masonry {
+				grid-template-columns: 1fr 1fr 1fr;
+			}
+		}
+		.masonry-item {
+			display: block;
+			margin-bottom: 0;
+			break-inside: unset;
+		}
+		.masonry-wide {
+			grid-column: span 2;
+		}
+		@media (max-width: 1099px) {
+			.masonry-wide {
+				grid-column: span 1;
+			}
 		}
 	}
+
 	.legend {
 		display: flex;
 		align-items: center;
@@ -621,83 +585,15 @@
 		box-shadow: 0 0 6px var(--scifi-cyan-glow);
 	}
 
-	.bento {
+	.geo-split {
 		display: grid;
-		gap: 1rem;
+		gap: 0.85rem;
+		grid-template-columns: 1fr 1fr;
 	}
-	.bento-single {
-		grid-template-columns: 1fr;
-	}
-	.bento-2 {
-		grid-template-columns: 1fr;
-	}
-	.bento-3 {
-		grid-template-columns: 1fr;
-	}
-	@media (min-width: 768px) {
-		.bento-2 {
-			grid-template-columns: 1fr 1fr;
+	@media (max-width: 520px) {
+		.geo-split {
+			grid-template-columns: 1fr;
 		}
-		.bento-3 {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
-	@media (min-width: 1024px) {
-		.bento:not(.bento-single):not(.bento-2):not(.bento-3) {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
-
-	.stream-list {
-		list-style: none;
-		margin: 0;
-		padding: 0.65rem 0.85rem 0.9rem;
-		min-height: 12rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-	.stream-row {
-		display: grid;
-		grid-template-columns: 3.6rem 1fr auto;
-		gap: 0.55rem;
-		align-items: center;
-		padding: 0.4rem 0.45rem;
-		border-radius: 8px;
-		font-size: 0.75rem;
-		background: rgba(var(--scifi-bg-deep-rgb), 0.25);
-		border: 1px solid transparent;
-	}
-	.stream-row:first-child {
-		border-color: rgba(var(--scifi-primary-rgb), 0.25);
-		background: rgba(var(--scifi-primary-rgb), 0.07);
-		animation: feed-in 0.45s var(--scifi-ease, ease-out);
-	}
-	.stream-time {
-		font-variant-numeric: tabular-nums;
-		color: var(--scifi-muted);
-		font-size: 0.68rem;
-	}
-	.stream-main {
-		display: flex;
-		flex-direction: column;
-		gap: 0.1rem;
-		min-width: 0;
-	}
-	.stream-tech {
-		color: var(--scifi-muted);
-		font-size: 0.62rem;
-		letter-spacing: 0.02em;
-	}
-	.stream-ref {
-		color: var(--scifi-cyan);
-		max-width: 7rem;
-		font-size: 0.68rem;
-	}
-	.stream-empty {
-		padding: 1.5rem 0.5rem;
-		color: var(--scifi-muted);
-		font-size: 0.8rem;
 	}
 
 	.rank-body {
@@ -752,9 +648,12 @@
 			transform: translateY(0);
 		}
 	}
+	.feed-row:first-child {
+		animation: feed-in 0.45s var(--scifi-ease, ease-out);
+	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.stream-row:first-child {
+		.feed-row:first-child {
 			animation: none;
 		}
 	}
