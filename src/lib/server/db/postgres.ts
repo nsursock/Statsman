@@ -1,19 +1,34 @@
 import postgres from 'postgres';
 import { randomBytes } from 'node:crypto';
-import { getDatabaseUrl } from '$lib/server/config';
+import { getPostgresConfig } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
 import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
 import type { EventInput, RecentEvent, Site, StatsSummary, Store, User } from './types';
 
 function sql() {
-	const url = getDatabaseUrl();
-	if (!url) throw new Error('DATABASE_URL is required for Postgres store');
-	const local = /@(localhost|127\.0\.0\.1)(:|\/)/i.test(url);
-	return postgres(url, {
+	const cfg = getPostgresConfig();
+	if (!cfg) {
+		throw new Error(
+			'Postgres not configured: set DATABASE_URL or PGHOST+PGUSER+PGPASSWORD (+ PGDATABASE/PGPORT)'
+		);
+	}
+	const local =
+		cfg.kind === 'url'
+			? /@(localhost|127\.0\.0\.1)(:|\/)/i.test(cfg.url)
+			: /^(localhost|127\.0\.0\.1)$/i.test(cfg.host);
+	const opts = {
 		max: 10,
-		// Supabase / managed Postgres require TLS from Railway and other clouds.
-		ssl: local ? false : 'require',
+		ssl: local ? (false as const) : ('require' as const),
 		connect_timeout: 15
+	};
+	if (cfg.kind === 'url') return postgres(cfg.url, opts);
+	return postgres({
+		host: cfg.host,
+		port: cfg.port,
+		database: cfg.database,
+		username: cfg.user,
+		password: cfg.password,
+		...opts
 	});
 }
 
