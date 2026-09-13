@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createSite, getStore, listSites } from '$lib/server/db';
 import { isCloud } from '$lib/server/config';
-import { planLimits } from '$lib/server/plans';
+import { effectiveCloudLimits } from '$lib/server/plans';
 import { normalizeHost } from '$lib/server/domain';
 import { DEMO_SITE_NAME } from '$lib/server/demo';
 import { operatorSites } from '$lib/server/onboarding';
@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (isCloud()) {
 		if (!locals.user) error(401, 'Login required');
 		const store = await getStore();
-		const limits = planLimits(locals.user.plan);
+		const limits = effectiveCloudLimits(locals.user.plan);
 		const count = await store.countSitesForUser(locals.user.id);
 		if (count >= limits.sites) {
 			error(402, `Plan allows ${limits.sites} site(s). Upgrade to add more.`);

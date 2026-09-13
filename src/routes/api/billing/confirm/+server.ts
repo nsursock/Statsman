@@ -6,7 +6,6 @@ import {
 	getPaymentIntentStatus,
 	syncPlanFromSubscription
 } from '$lib/server/stripe';
-import { getStore } from '$lib/server/db';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!isCloud()) error(400, 'Billing is cloud-only');
@@ -16,7 +15,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const body = await request.json().catch(() => ({}));
 	const paymentIntentId = String(body.paymentIntentId ?? '');
 	const subscriptionId = String(body.subscriptionId ?? '');
-	const planHint = body.plan === 'creator' ? 'creator' : body.plan === 'indie' ? 'indie' : null;
 
 	if (!paymentIntentId && !subscriptionId) {
 		error(400, 'paymentIntentId or subscriptionId required');
@@ -29,17 +27,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	}
 
+	// Only sync from Stripe subscription — never trust a client plan hint.
 	if (subscriptionId) {
-		const synced = await syncPlanFromSubscription(subscriptionId);
+		const synced = await syncPlanFromSubscription(subscriptionId, {
+			userId: locals.user.id
+		});
 		return json({ ok: true, ...synced });
 	}
 
-	// Payment succeeded but no subscription id — set plan from hint as a safety net.
-	if (planHint) {
-		const store = await getStore();
-		await store.setUserPlan(locals.user.id, planHint);
-		return json({ ok: true, plan: planHint, userId: locals.user.id });
-	}
-
-	return json({ ok: true });
+	return json({ ok: true, plan: null });
 };

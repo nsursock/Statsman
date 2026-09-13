@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { demoSeedEnabled, getDemoSite, seedDemoTraffic } from '$lib/server/demo';
 import { isCloud, showMarketing } from '$lib/server/config';
+import { billingEnabled } from '$lib/server/stripe';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Pure self-host installs are an app, not a marketing site.
@@ -15,6 +16,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const authed = isCloud() ? Boolean(locals.user) : Boolean(locals.adminOk);
 	return {
 		demo: demo ? { id: demo.id, name: demo.name, domain: demo.domain } : null,
-		authed
+		authed,
+		billingEnabled: billingEnabled()
 	};
 };

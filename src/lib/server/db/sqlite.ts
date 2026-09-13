@@ -488,13 +488,15 @@ export function createSqliteStore(): Store {
 			if (existing) return existing;
 			const id = randomBytes(8).toString('hex');
 			const created_at = Date.now();
+			const { isFounderEmail } = await import('$lib/server/config');
+			const plan = isFounderEmail(email) ? 'founder' : 'free';
 			db.prepare(
 				'INSERT INTO users (id, email, plan, stripe_customer_id, created_at) VALUES (?, ?, ?, NULL, ?)'
-			).run(id, email, 'free', created_at);
+			).run(id, email, plan, created_at);
 			return {
 				id,
 				email,
-				plan: 'free',
+				plan,
 				stripe_customer_id: null,
 				created_at
 			};

@@ -107,6 +107,33 @@
 		s.getAttribute('data-allow-localhost') !== 'false' &&
 		s.getAttribute('data-allow-localhost') !== '0';
 
+	var ignorePrefixes = (function () {
+		var raw = s.getAttribute('data-ignore-prefix') || s.getAttribute('data-ignore-prefixes') || '';
+		if (!raw) return [];
+		return raw
+			.split(',')
+			.map(function (p) {
+				return String(p || '')
+					.trim()
+					.split('?')[0];
+			})
+			.filter(function (p) {
+				return p.charAt(0) === '/';
+			});
+	})();
+
+	function isIgnoredPath(path) {
+		if (!ignorePrefixes.length) return false;
+		var pathOnly = String(path || location.pathname || '/')
+			.split('?')[0]
+			.split('#')[0];
+		for (var i = 0; i < ignorePrefixes.length; i++) {
+			var pre = ignorePrefixes[i];
+			if (pathOnly === pre || pathOnly.indexOf(pre + '/') === 0) return true;
+		}
+		return false;
+	}
+
 	// ?statsman_debug=1 → persistent browser opt-out (Preview site / admin debug)
 	try {
 		if (/(?:^|[?&])statsman_debug=1(?:&|$)/.test(location.search || '')) {
@@ -180,6 +207,7 @@
 
 	function emit(name, data, opts) {
 		if (isOptedOut()) return;
+		if (isIgnoredPath(location.pathname)) return;
 		opts = opts || {};
 		var m = meta();
 		var payload = {
@@ -248,6 +276,11 @@
 		engagedVisit = false;
 		scrolled = false;
 		scrollMarks = { 25: false, 50: false, 75: false, 90: false };
+		// Console / ignored routes: stay silent (including route_change into them).
+		if (isIgnoredPath(next) || isIgnoredPath(from)) {
+			if (!isIgnoredPath(next)) sendPageview();
+			return;
+		}
 		emit('route_change', { from: from }, { referrer: null });
 		sendPageview();
 	}

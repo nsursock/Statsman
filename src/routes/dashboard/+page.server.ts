@@ -3,8 +3,9 @@ import { dev } from '$app/environment';
 import type { PageServerLoad } from './$types';
 import { listSites, getStats, getStore, currentYyyymm } from '$lib/server/db';
 import { getPublicOrigin, isCloud } from '$lib/server/config';
-import { planLimits } from '$lib/server/plans';
-import { billingEnabled } from '$lib/server/stripe';
+import { effectiveCloudLimits } from '$lib/server/plans';
+import { billingEnabled, reconcileUserPlanFromStripe } from '$lib/server/stripe';
+import { ensureFounderPlan } from '$lib/server/founder';
 import {
 	DEMO_SITE_NAME,
 	demoEnabled,
@@ -21,6 +22,25 @@ export const load: PageServerLoad = async ({ url, locals, request, getClientAddr
 		if (!locals.user) redirect(303, '/login');
 	} else if (!locals.adminOk) {
 		redirect(303, '/login');
+	}
+
+	const store = await getStore();
+
+	if (isCloud() && locals.user) {
+		locals.user = await ensureFounderPlan(locals.user);
+	}
+
+	// Always mirror Stripe → local plan before rendering Account / limits.
+	if (isCloud() && locals.user && billingEnabled()) {
+		const snap = await reconcileUserPlanFromStripe(locals.user.id);
+		const fresh = await store.getUserById(locals.user.id);
+		if (fresh) {
+			locals.user = fresh;
+		} else {
+			locals.user = { ...locals.user, plan: snap.plan };
+		}
+		// Re-assert founder after reconcile (belt + suspenders).
+		locals.user = await ensureFounderPlan(locals.user);
 	}
 
 	const allSites = isCloud() && locals.user ? await listSites(locals.user.id) : await listSites();
@@ -49,21 +69,22 @@ export const load: PageServerLoad = async ({ url, locals, request, getClientAddr
 	const points = parsePointsParam(url.searchParams.get('points'));
 	const chart = parseChartParam(url.searchParams.get('chart'));
 
-	const store = await getStore();
+	const plan = locals.user?.plan ?? 'free';
 	const [stats, recentEvents, usage] = await Promise.all([
 		site ? getStats(site.id, range, points) : Promise.resolve(null),
 		site ? store.getRecentEvents(site.id, 14) : Promise.resolve([]),
 		isCloud() && locals.user
 			? store.getMonthlyUsage(locals.user.id, currentYyyymm()).then((used) => {
-					const limits = planLimits(locals.user!.plan);
+					const limits = effectiveCloudLimits(plan);
+					const paid = billingEnabled();
 					return {
 						used,
 						limit: limits.pageviews,
 						sitesLimit: limits.sites,
 						sitesUsed: sites.length,
-						plan: locals.user!.plan,
+						plan: paid ? plan : plan === 'founder' ? 'founder' : 'beta',
 						pct: Math.min(100, Math.round((used / Math.max(limits.pageviews, 1)) * 100)),
-						overCap: used >= limits.pageviews
+						overCap: paid && used >= limits.pageviews
 					};
 				})
 			: Promise.resolve(null)

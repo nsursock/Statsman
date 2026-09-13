@@ -26,13 +26,19 @@
 		mode = data.mode === 'signup' ? 'signup' : 'login';
 	});
 
-	function setMode(next: 'login' | 'signup') {
-		mode = next;
+	function loginHref(m: 'login' | 'signup') {
+		const q = new URLSearchParams({ mode: m });
+		if (data.next) q.set('next', data.next);
+		return `/login?${q}`;
+	}
+
+	function setMode(nextMode: 'login' | 'signup') {
+		mode = nextMode;
 		status = '';
 		errorMsg = '';
 		sent = false;
 		devLink = null;
-		goto(`/login?mode=${next}`, { replaceState: true, keepFocus: true, noScroll: true });
+		goto(loginHref(nextMode), { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
 	async function submit(e: Event) {
@@ -43,12 +49,10 @@
 		devLink = null;
 		try {
 			const body = data.isCloud
-				? { email }
+				? { email, next: data.next }
 				: data.needsAdminToken
 					? { adminToken }
-					: data.openSelfhost
-						? { openAccess: true }
-						: { email };
+					: { openAccess: true };
 			const res = await fetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -57,7 +61,7 @@
 			const payload = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(payload.message || 'Request failed');
 			if (payload.mode === 'admin' || payload.mode === 'open') {
-				window.location.href = '/dashboard';
+				window.location.href = data.next || '/dashboard';
 				return;
 			}
 			sent = true;
@@ -87,7 +91,7 @@
 			});
 			const payload = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(payload.message || 'Could not enter console');
-			window.location.href = '/dashboard';
+			window.location.href = data.next || '/dashboard';
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : 'Something went wrong';
 			busy = false;
@@ -117,24 +121,43 @@
 			<div class="relative z-10">
 				<a href="/" class="brand-mark text-xl no-underline">Statsman</a>
 				<p class="label-kicker text-scifi-primary mt-8 mb-3">
-					{mode === 'signup' ? '// New transmission' : '// Welcome back'}
+					{#if !data.isCloud}
+						// Operator console
+					{:else if mode === 'signup'}
+						// New transmission
+					{:else}
+						// Welcome back
+					{/if}
 				</p>
 				<h1 class="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.05] mb-4">
-					{#if mode === 'signup'}
+					{#if !data.isCloud}
+						Unlock your<br /><span class="text-scifi-primary glow-text">self-host console.</span>
+					{:else if mode === 'signup'}
 						Own your signal<br /><span class="text-scifi-primary glow-text">in sixty seconds.</span>
 					{:else}
 						Resume the<br /><span class="text-scifi-primary glow-text">console.</span>
 					{/if}
 				</h1>
 				<p class="text-scifi-muted text-sm leading-relaxed max-w-md">
-					Cookieless analytics for indie blogs. Magic-link auth, no password to forget, no cookie
-					banner to apologize for.
+					{#if data.isCloud}
+						Cookieless analytics for indie blogs. Magic-link auth, no password to forget, no cookie
+						banner to apologize for.
+					{:else}
+						This instance is yours — no Stripe, no plan caps. Unlock with your admin token (or open
+						access if none is set).
+					{/if}
 				</p>
 			</div>
 			<ul class="relative z-10 space-y-3 text-sm text-scifi-muted list-none p-0 m-0">
-				<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Free tier · 1 site · 3k views/mo</li>
-				<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Self-host forever on Docker · MIT</li>
-				<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Upgrade only when you outgrow free</li>
+				{#if data.isCloud}
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Free tier · 1 site · 3k views/mo</li>
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Self-host forever on Docker · MIT</li>
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Upgrade only when you outgrow free</li>
+				{:else}
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> SQLite volume or your Postgres</li>
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Practical unlimited sites &amp; views</li>
+					<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span> Same tracker.js as cloud</li>
+				{/if}
 			</ul>
 		</section>
 

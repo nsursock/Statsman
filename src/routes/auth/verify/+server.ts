@@ -1,9 +1,12 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getStore, hashToken, newToken } from '$lib/server/db';
-import { setSessionCookie } from '$lib/server/auth';
+import { parseInternalPath, setSessionCookie } from '$lib/server/auth';
+import { isCloud } from '$lib/server/config';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
+	if (!isCloud()) error(400, 'Magic-link verify is cloud-only');
+
 	const token = url.searchParams.get('token');
 	if (!token) error(400, 'Missing token');
 
@@ -16,6 +19,6 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	await store.createSession(userId, hashToken(sessionToken), Date.now() + maxAge * 1000);
 	setSessionCookie(cookies, sessionToken, maxAge);
 
-	// Always land on dashboard; first-time setup is an in-dashboard modal.
-	redirect(303, '/dashboard');
+	const next = parseInternalPath(url.searchParams.get('next')) ?? '/dashboard';
+	redirect(303, next);
 };

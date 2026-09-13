@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { enterShell, gsap } from '@scifiui/core/js';
+	import { enterShell, gsap, createToaster } from '@scifiui/core/js';
 	import ConsoleFrame from '$lib/components/ConsoleFrame.svelte';
 	import MissionConsole from '$lib/components/MissionConsole.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
@@ -58,6 +58,32 @@
 		enterShell(root);
 		live = data.isDev;
 
+		const toastHost = document.createElement('div');
+		toastHost.className = 'toast toast-top toast-end';
+		document.body.appendChild(toastHost);
+		const toaster = createToaster(toastHost);
+
+		if (data.billingFlash === 'success') {
+			const planHint = new URLSearchParams(window.location.search).get('plan');
+			const label =
+				planHint === 'creator' ? 'Creator' : planHint === 'indie' ? 'Indie' : 'your plan';
+			toaster.success(`Subscribed — welcome to ${label}.`, { ttl: 4200 });
+			const url = new URL(window.location.href);
+			url.searchParams.delete('billing');
+			url.searchParams.delete('plan');
+			history.replaceState({}, '', url.pathname + url.search);
+		} else if (data.billingFlash === 'canceled') {
+			toaster.info('Back on Free. Come back anytime.', { ttl: 4200 });
+			const url = new URL(window.location.href);
+			url.searchParams.delete('billing');
+			history.replaceState({}, '', url.pathname + url.search);
+		} else if (data.billingFlash === 'cancel') {
+			toaster.warning('Checkout canceled — still on Free.', { ttl: 3600 });
+			const url = new URL(window.location.href);
+			url.searchParams.delete('billing');
+			history.replaceState({}, '', url.pathname + url.search);
+		}
+
 		const tickClock = () => {
 			clock = new Date().toLocaleTimeString('en-GB', { hour12: false });
 		};
@@ -94,6 +120,7 @@
 		return () => {
 			timers.forEach(clearInterval);
 			window.removeEventListener('keydown', onKey);
+			toastHost.remove();
 		};
 	});
 
@@ -199,13 +226,16 @@
 	}
 
 	async function checkout(plan: 'indie' | 'creator') {
-		window.location.href = `/subscribe?plan=${plan}&next=${encodeURIComponent('/dashboard?billing=success')}`;
+		const current = data.user?.plan;
+		if (current === 'indie' || current === 'creator') {
+			window.location.href = '/billing';
+			return;
+		}
+		window.location.href = `/subscribe?plan=${plan}&next=${encodeURIComponent(`/dashboard?billing=success&plan=${plan}`)}`;
 	}
 
 	async function portal() {
-		const res = await fetch('/api/billing/portal', { method: 'POST' });
-		const payload = await res.json();
-		if (payload.url) window.location.href = payload.url;
+		window.location.href = '/billing';
 	}
 
 	async function copyTracker() {
@@ -318,10 +348,6 @@
 		{/snippet}
 
 		<div class="space-y-4">
-			{#if data.billingFlash === 'success'}
-				<div class="alert alert-success text-sm" data-deck>Billing updated. Welcome aboard.</div>
-			{/if}
-
 			{#if data.usage?.overCap}
 				<div class="cap-banner" data-deck>
 					<div>

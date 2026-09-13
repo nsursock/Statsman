@@ -19,7 +19,13 @@
 </svelte:head>
 
 {#if data.analytics}
-	<script defer src={data.analytics.src} data-site={data.analytics.siteId}></script>
+	<script
+		defer
+		src={data.analytics.src}
+		data-site={data.analytics.siteId}
+		data-allow-localhost={data.analytics.allowLocalhost ? '' : undefined}
+		data-ignore-prefix={data.analytics.ignorePrefixes}
+	></script>
 {/if}
 
 {@render children()}

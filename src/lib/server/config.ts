@@ -131,3 +131,22 @@ export function getResendApiKey(): string | undefined {
 export function getMailFrom(): string {
 	return env.MAIL_FROM || 'Statsman <onboarding@resend.dev>';
 }
+
+/**
+ * Comma-separated emails that get the Founder plan on cloud (operator seats).
+ * Example: STATSMAN_FOUNDER_EMAILS=you@domain.com,cofounder@domain.com
+ */
+export function getFounderEmails(): string[] {
+	const raw = (env.STATSMAN_FOUNDER_EMAILS || '').trim();
+	if (!raw) return [];
+	return raw
+		.split(',')
+		.map((e) => e.trim().toLowerCase())
+		.filter(Boolean);
+}
+
+export function isFounderEmail(email: string | null | undefined): boolean {
+	if (!email) return false;
+	const needle = email.trim().toLowerCase();
+	return getFounderEmails().includes(needle);
+}

@@ -12,12 +12,25 @@ Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 
 | Deploy | Who | `STATSMAN_MODE` | What `/` does |
 | --- | --- | --- | --- |
-| **Main site** (Railway + Supabase) | Product marketing; your dashboard; later cloud customers | `hosted` → `cloud` when SaaS is live | Landing, pricing, product |
-| **Self-host** (any Docker host) | Anyone running their own instance | `selfhost` | Login → dashboard (no marketing) |
+| **Self-host** (any Docker host) | You run your own box | `selfhost` | Login → dashboard (no marketing, no Stripe) |
+| **Main site** (Railway + Supabase) | Your dogfood / marketing | `hosted` | Landing + your operator dashboard |
+| **Cloud SaaS** (Railway + Supabase) | Paying customers (Free → Stripe) | `cloud` | Landing, magic-link, plans, billing |
 
-**Self-host promise:** if it can run Docker, it can run Statsman. Pick Railway, Render, a VPS, Portainer, etc. Use a volume for SQLite or point `DATABASE_URL` at Postgres (e.g. Supabase).
+**Both product paths are supported:** customers either **self-host** (`STATSMAN_MODE=selfhost`) or use **your cloud** (`STATSMAN_MODE=cloud`). Never set `cloud` on a customer’s Docker box — that forces SaaS login and plan caps.
 
 Same codebase. Cloud customers sign up on the main site. Self-host customers follow [`/self-host`](/self-host).
+
+Local smokes:
+
+```bash
+# Cloud multi-tenant (dev already on :5173 with STATSMAN_MODE=cloud)
+node scripts/smoke-multi-client.mjs
+
+# Self-host operator (separate port + DB file)
+STATSMAN_MODE=selfhost DATABASE_PATH=./data/smoke-selfhost.db \
+  PUBLIC_ORIGIN=http://localhost:5174 npm run dev -- --port 5174
+SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
+```
 
 ## Hybrid model
 
@@ -75,25 +88,53 @@ In `npm run dev`, a **Demo Site** is auto-created (domain `localhost`): the land
 
 ## Cloud mode (main site)
 
-Run the commercial site on Railway with Supabase:
+Paid track: **start free** (magic-link) → upgrade on `/subscribe` (Stripe Payment Element) → manage on `/billing` (plan change, cancel, update card).
+
+### Deploy checklist (Railway + Supabase + live Stripe)
+
+1. **Supabase** — create a project; copy the Postgres connection (URL or `PG*` vars). Prefer the pooled host for the app.
+2. **Railway** — new service from this repo (uses `Dockerfile` + `railway.toml`). Set env:
 
 ```bash
-STATSMAN_MODE=hosted   # or cloud when multi-user SaaS is live
-PUBLIC_ORIGIN=https://your-main-domain
-DATABASE_URL=postgres://...   # Supabase
-SESSION_SECRET=...
-ADMIN_TOKEN=...               # until cloud magic-link is enabled
-# cloud extras when ready:
-# RESEND_API_KEY=...
-# STRIPE_SECRET_KEY=...
-# STRIPE_WEBHOOK_SECRET=...
-# STRIPE_PRICE_INDIE=price_...
-# STRIPE_PRICE_CREATOR=price_...
+STATSMAN_MODE=cloud
+PUBLIC_ORIGIN=https://your-domain.com
+ORIGIN=https://your-domain.com
+PROTOCOL_HEADER=x-forwarded-proto
+HOST_HEADER=host
+ADDRESS_HEADER=x-forwarded-for
+SESSION_SECRET=long-random-string
+DATABASE_URL=postgres://...   # or PGHOST/PGUSER/PGPASSWORD/...
+RESEND_API_KEY=re_...
+MAIL_FROM=Statsman <you@your-domain.com>
+PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_INDIE=price_...
+STRIPE_PRICE_CREATOR=price_...
 ```
 
-Stripe webhook path: `POST /api/billing/webhook`.
+3. **Domain** — attach custom domain on Railway; `PUBLIC_ORIGIN` / `ORIGIN` must match HTTPS.
+4. **Resend** — verify the sending domain used in `MAIL_FROM` (required for real magic links).
+5. **Stripe Live**
+   - Create Indie ($9) + Creator ($19) recurring prices; paste IDs into `STRIPE_PRICE_*`.
+   - Webhook endpoint: `https://your-domain.com/api/billing/webhook`
+   - Events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice_payment.paid`
+   - Copy the endpoint signing secret → `STRIPE_WEBHOOK_SECRET`
+6. **Smoke** — `GET /api/health` should show `"billingReady": true`. Sign up → subscribe with a live card (or Stripe test card if still on test keys) → confirm `/billing` and webhook deliveries in the Stripe Dashboard.
 
-Paid plans use a **native** `/subscribe` page (Stripe Payment Element inside ScifiUI) — not Stripe-hosted Checkout.
+Do **not** mix test and live keys/prices/webhook secrets.
+
+Local cloud smoke (test mode):
+
+```bash
+STATSMAN_MODE=cloud
+# test keys + prices in .env
+stripe listen --forward-to localhost:5173/api/billing/webhook
+```
+
+Stripe webhook: `POST /api/billing/webhook`. Plan promotion happens on **paid invoice** events (not on bare `subscription.updated`).
+
+Flow: Pricing / Settings → signup or login (`next` preserved through magic link) → `/subscribe?plan=indie|creator` → dashboard → `/billing` to change plan, cancel, or update card.
 
 ### Plans
 

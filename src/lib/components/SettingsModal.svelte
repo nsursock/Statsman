@@ -176,7 +176,15 @@
 			: ''
 	);
 	const previewUrl = $derived(
-		site ? `https://${site.domain}/?statsman_debug=1` : ''
+		!site
+			? ''
+			: (() => {
+					const d = site.domain.trim().toLowerCase();
+					if (d === 'localhost' || d === '127.0.0.1' || d.endsWith('.local')) {
+						return `${origin}/demo?statsman_debug=1`;
+					}
+					return `https://${site.domain}/?statsman_debug=1`;
+				})()
 	);
 
 	$effect(() => {
@@ -708,12 +716,27 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 											></div>
 										</div>
 										<div class="flex flex-wrap gap-2 mt-4">
-											{#if billingEnabled && usage.plan === 'free'}
+											{#if usage.plan === 'founder'}
+												<p class="text-xs text-scifi-muted m-0">
+													Founder seat — full cloud access, no billing.
+												</p>
+											{:else if usage.plan === 'beta'}
+												<p class="text-xs text-scifi-muted m-0">
+													Free beta — unlimited for now. Billing comes later.
+												</p>
+											{:else if billingEnabled && usage.plan === 'free'}
 												<button type="button" class="btn btn-primary btn-sm" onclick={() => onCheckout('indie')}>
 													Upgrade Indie $9
 												</button>
 												<button type="button" class="btn btn-ghost btn-sm" onclick={() => onCheckout('creator')}>
 													Creator $19
+												</button>
+											{:else if billingEnabled && usage.plan === 'indie'}
+												<button type="button" class="btn btn-primary btn-sm" onclick={onPortal}>
+													Upgrade Creator $19
+												</button>
+												<button type="button" class="btn btn-ghost btn-sm" onclick={onPortal}>
+													Manage billing
 												</button>
 											{:else if billingEnabled}
 												<button type="button" class="btn btn-ghost btn-sm" onclick={onPortal}>

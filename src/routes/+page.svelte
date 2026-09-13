@@ -116,7 +116,7 @@
 		name="description"
 		content="Cookieless web analytics you can self-host for free, or run on a managed cloud. SQLite or Postgres, Docker-ready, MIT."
 	/>
-	{#if data.demo}
+	{#if data.demo && !data.analytics}
 		<!-- Dogfood: this landing page is tracked by the demo site. Your visit just fired a real event. -->
 		<script defer src="/tracker.js" data-site={data.demo.id} data-allow-localhost></script>
 	{/if}
@@ -367,21 +367,30 @@
 			<div class="mb-8" data-reveal>
 				<p class="label-kicker text-scifi-cyan mb-2">03 / Pick your orbit</p>
 				<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-					Free for small ships. <span class="text-scifi-primary glow-text">Paid for fleets.</span>
+					{#if data.billingEnabled}
+						Free for small ships. <span class="text-scifi-primary glow-text">Paid for fleets.</span>
+					{:else}
+						Cloud free while we grow. <span class="text-scifi-primary glow-text">Self-host forever.</span>
+					{/if}
 				</h2>
 			</div>
 
 			<div class="grid gap-4 lg:grid-cols-2 mb-4">
 				<div class="metric-card card-bordered" data-reveal>
 					<div class="card-head">
-						<span class="card-label"><span class="label-bar"></span> Free — small ships</span>
+						<span class="card-label"><span class="label-bar"></span> Cloud — free beta</span>
 						<span class="badge badge-primary">$0</span>
 					</div>
-					<div class="card-value mb-1">$0<span class="text-sm text-scifi-muted font-normal"> / forever</span></div>
+					<div class="card-value mb-1">$0<span class="text-sm text-scifi-muted font-normal"> / for now</span></div>
 					<p class="text-scifi-muted text-sm leading-relaxed">
-						Blog, portfolio, side project. Self-host the MIT build with
-						<code class="text-scifi-cyan">docker compose up</code> — unlimited everything — or take the
-						free cloud tier: 1 site, 3,000 pageviews/mo, no card.
+						{#if data.billingEnabled}
+							Blog, portfolio, side project. Self-host the MIT build with
+							<code class="text-scifi-cyan">docker compose up</code> — unlimited everything — or take the
+							free cloud tier: 1 site, 3,000 pageviews/mo, no card.
+						{:else}
+							Magic-link cloud for indie blogs — practical unlimited sites &amp; views while we dogfood.
+							No card. Stripe stays off until traction.
+						{/if}
 					</p>
 					<div class="card-actions">
 						<a href="/signup" class="btn btn-primary btn-sm">Start free</a>
@@ -390,21 +399,31 @@
 				</div>
 				<div class="metric-card" data-reveal>
 					<div class="card-head">
-						<span class="card-label"><span class="label-bar"></span> Paid — established players</span>
-						<span class="status-chip"><span class="dot"></span> managed cloud</span>
+						<span class="card-label"><span class="label-bar"></span> Self-host — forever</span>
+						<span class="status-chip"><span class="dot"></span> MIT</span>
 					</div>
-					<div class="card-value mb-1">$9<span class="text-sm text-scifi-muted font-normal"> / mo and up</span></div>
+					<div class="card-value mb-1">$0<span class="text-sm text-scifi-muted font-normal"> / forever</span></div>
 					<p class="text-scifi-muted text-sm leading-relaxed">
-						Multiple blogs, real traffic, zero ops. Magic-link login, managed Postgres, Stripe
-						billing, and upgrade banners instead of hard stops. We run the ship; you write the
-						blog.
+						{#if data.billingEnabled}
+							Multiple blogs, real traffic, zero ops. Magic-link login, managed Postgres, Stripe
+							billing, and upgrade banners instead of hard stops. We run the ship; you write the
+							blog.
+						{:else}
+							Run Statsman on your own Docker host — Railway, a VPS, Portainer. Same tracker, your
+							disk, no SaaS dependency.
+						{/if}
 					</p>
 					<div class="card-actions">
-						<a href="/pricing" class="btn btn-sm">Compare plans</a>
+						{#if data.billingEnabled}
+							<a href="/pricing" class="btn btn-sm">Compare plans</a>
+						{:else}
+							<a href="/self-host" class="btn btn-sm">Self-host guide</a>
+						{/if}
 					</div>
 				</div>
 			</div>
 
+			{#if data.billingEnabled}
 			<div class="pane" data-reveal>
 				<div class="pane-header">
 					<span class="pane-title"><span class="pane-title-bar"></span> Plans at a glance</span>
@@ -428,6 +447,20 @@
 					</p>
 				</div>
 			</div>
+			{:else}
+			<div class="pane" data-reveal>
+				<div class="pane-header">
+					<span class="pane-title"><span class="pane-title-bar"></span> Beta terms</span>
+					<a href="/pricing" class="btn btn-xs btn-ghost">Details →</a>
+				</div>
+				<div class="p-4 sm:p-5 text-sm text-scifi-muted">
+					<p class="m-0 leading-relaxed">
+						Cloud is free while we grow. If we hit real traction (~1k daily visitors), we’ll turn on
+						Stripe — with clear notice before any paid plans go live.
+					</p>
+				</div>
+			</div>
+			{/if}
 		</section>
 
 		<!-- ============ CTA ============ -->
@@ -460,7 +493,11 @@
 						{/if}
 					</div>
 					<p class="mt-5 text-[0.68rem] tracking-[0.14em] uppercase text-scifi-muted/70">
-						3,000 pageviews/mo free · No credit card · MIT self-host
+						{#if data.billingEnabled}
+							3,000 pageviews/mo free · No credit card · MIT self-host
+						{:else}
+							Free cloud beta · No credit card · MIT self-host
+						{/if}
 					</p>
 				</div>
 			</div>

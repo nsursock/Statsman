@@ -86,3 +86,12 @@ export function signState(payload: string): string {
 	const h = createHmac('sha256', getSessionSecret()).update(payload).digest('hex');
 	return `${payload}.${h}`;
 }
+
+/** Relative in-app path only — blocks open redirects after magic-link / billing. */
+export function parseInternalPath(raw: string | null | undefined): string | null {
+	if (!raw) return null;
+	const path = raw.trim();
+	if (!path.startsWith('/') || path.startsWith('//')) return null;
+	if (path.includes('://') || path.includes('\\')) return null;
+	return path;
+}

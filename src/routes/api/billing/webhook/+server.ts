@@ -1,8 +1,10 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { isCloud } from '$lib/server/config';
 import { handleStripeWebhook } from '$lib/server/stripe';
 
 export const POST: RequestHandler = async ({ request }) => {
+	if (!isCloud()) error(400, 'Billing webhooks are cloud-only');
 	const signature = request.headers.get('stripe-signature');
 	if (!signature) error(400, 'Missing signature');
 	const raw = await request.text();

@@ -13,7 +13,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	if (isCloud()) {
 		if (!locals.user) error(401, 'Login required');
-		if (site.user_id && site.user_id !== locals.user.id) error(403, 'Forbidden');
+		// Orphan sites (user_id null from a prior self-host DB) are not readable in cloud.
+		if (!site.user_id || site.user_id !== locals.user.id) error(403, 'Forbidden');
 	} else if (!locals.adminOk) {
 		error(401, 'Admin required');
 	}

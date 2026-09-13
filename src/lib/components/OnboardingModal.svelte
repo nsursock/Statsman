@@ -29,15 +29,20 @@
 
 	function initialStep(
 		flash: string | null | undefined,
-		cloud: boolean
+		cloud: boolean,
+		userPlan: string,
+		billingOn: boolean
 	): 'plan' | 'site' | 'install' {
 		if (flash === 'success') return 'site';
-		return cloud ? 'plan' : 'site';
+		if (!cloud) return 'site';
+		// Free beta / already paid / founder — skip the Stripe upsell.
+		if (!billingOn || (userPlan && userPlan !== 'free')) return 'site';
+		return 'plan';
 	}
 
 	// Capture mount-time props once (onboarding isn't remounted mid-session).
 	let step = $state<'plan' | 'site' | 'install'>(
-		untrack(() => initialStep(billingFlash, isCloud))
+		untrack(() => initialStep(billingFlash, isCloud, plan, billingEnabled))
 	);
 	let name = $state('');
 	let domain = $state('');
@@ -51,7 +56,7 @@
 	});
 
 	const steps = $derived(
-		isCloud
+		isCloud && billingEnabled
 			? [
 					{ id: 'plan' as const, label: 'Plan' },
 					{ id: 'site' as const, label: 'Site' },

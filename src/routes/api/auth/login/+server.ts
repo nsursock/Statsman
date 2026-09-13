@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { getStore, hashToken, newToken } from '$lib/server/db';
 import { sendMagicLink } from '$lib/server/mail';
 import { getAdminToken, isCloud } from '$lib/server/config';
-import { setAccessCookie, setAdminCookie } from '$lib/server/auth';
+import { parseInternalPath, setAccessCookie, setAdminCookie } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const body = await request.json();
@@ -24,16 +24,25 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		return json({ ok: true, mode: 'admin' });
 	}
 
+	// Self-host / hosted: only token or open-console unlock — never magic-link.
+	if (!isCloud()) {
+		error(400, 'Magic-link login is cloud-only. Unlock with ADMIN_TOKEN or open access.');
+	}
+
 	const email = String(body.email ?? '')
 		.trim()
 		.toLowerCase();
 	if (!email || !email.includes('@')) error(400, 'Valid email required');
 
+	const next = parseInternalPath(typeof body.next === 'string' ? body.next : null);
+
 	const store = await getStore();
-	const user = await store.upsertUserByEmail(email);
+	let user = await store.upsertUserByEmail(email);
+	const { ensureFounderPlan } = await import('$lib/server/founder');
+	user = await ensureFounderPlan(user);
 	const token = newToken(24);
 	await store.createLoginToken(user.id, hashToken(token), Date.now() + 15 * 60 * 1000);
-	const result = await sendMagicLink(email, token);
+	const result = await sendMagicLink(email, token, next);
 
 	return json({
 		ok: true,

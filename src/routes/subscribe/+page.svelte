@@ -16,7 +16,7 @@
 	let subscriptionId = $state<string | null>(null);
 	let ready = $state(false);
 	let busy = $state(false);
-	let errorMsg = $state('');
+	let errorMsg = $state(data.payError || '');
 	let bootMsg = $state('Initializing secure payment channel…');
 
 	onMount(() => {
@@ -151,7 +151,7 @@
 						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> {data.planMeta.sites} sites</li>
 						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> {data.planMeta.pageviews.toLocaleString()} pageviews / mo</li>
 						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Cookieless tracker · over-cap stays green</li>
-						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Cancel anytime from the portal</li>
+						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Cancel anytime from Billing</li>
 					</ul>
 					<div class="glass rounded-lg p-3 text-xs text-scifi-muted">
 						Billed to <span class="text-scifi-cyan">{data.user.email}</span>
@@ -185,12 +185,12 @@
 							{busy ? 'Confirming…' : `Subscribe · $${data.planMeta.priceMonthly}/mo`}
 						</button>
 						<p class="text-[0.68rem] tracking-[0.1em] uppercase text-scifi-muted/70 m-0 text-center">
-							Secured by Stripe · UI is Statsman · card never touches our servers
+							Secured by Stripe · card never touches our servers
 						</p>
 					{:else}
 						<p class="text-scifi-muted text-sm m-0">
 							Set <code class="text-scifi-cyan">PUBLIC_STRIPE_PUBLISHABLE_KEY</code> and
-							<code class="text-scifi-cyan">STRIPE_SECRET_KEY</code> to enable native checkout.
+							<code class="text-scifi-cyan">STRIPE_SECRET_KEY</code> to enable checkout.
 						</p>
 						<a class="btn btn-ghost w-full text-center" href="/pricing">Back to pricing</a>
 					{/if}

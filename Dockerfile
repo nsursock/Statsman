@@ -16,6 +16,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 # Railway private network is IPv6 (fd12:…). Bind :: for dual-stack; 0.0.0.0 alone → connection refused.
 ENV HOST=::
+# Override to cloud on the main product Railway service.
 ENV STATSMAN_MODE=selfhost
 ENV DATABASE_PATH=/data/statsman.db
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*

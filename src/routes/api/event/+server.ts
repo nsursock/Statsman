@@ -4,7 +4,7 @@ import { getSite, getStore, hashVisitor, currentYyyymm } from '$lib/server/db';
 import { parseUserAgent } from '$lib/server/ua';
 import { hostsMatch, requestHost } from '$lib/server/domain';
 import { isCloud } from '$lib/server/config';
-import { planLimits } from '$lib/server/plans';
+import { effectiveCloudLimits } from '$lib/server/plans';
 import { geoFromHeaders, resolveClientIp } from '$lib/server/geo';
 import { parseDurationMs, serializeEventProps } from '$lib/server/event-props';
 import { enqueueEvent } from '$lib/server/event-buffer';
@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		const store = await getStore();
 		const owner = await store.getUserById(site.user_id);
 		if (owner) {
-			const limits = planLimits(owner.plan);
+			const limits = effectiveCloudLimits(owner.plan);
 			const used = await store.getMonthlyUsage(owner.id, currentYyyymm());
 			if (used >= limits.pageviews) {
 				// Soft drop — keep blogs green, show upgrade in dashboard.

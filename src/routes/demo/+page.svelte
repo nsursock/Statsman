@@ -20,8 +20,10 @@
 		name="description"
 		content="A fictional indie blog, tracked for real by this Statsman instance. Every click fires an actual event."
 	/>
-	<!-- Dogfood: this fake blog is tracked by the real tracker, same as any customer site. -->
-	<script defer src="/tracker.js" data-site={data.siteId} data-allow-localhost></script>
+	<!-- Dogfood: fake blog → real tracker. Skip if layout already injects the same site. -->
+	{#if !data.analytics || data.analytics.siteId !== data.siteId}
+		<script defer src="/tracker.js" data-site={data.siteId} data-allow-localhost></script>
+	{/if}
 </svelte:head>
 
 <main bind:this={root} class="relative min-h-screen bg-[var(--scifi-bg)] text-[var(--scifi-text)] pb-36">

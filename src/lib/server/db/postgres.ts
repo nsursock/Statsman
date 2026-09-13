@@ -508,10 +508,12 @@ export async function createPostgresStore(): Promise<Store> {
 			if (existing) return existing;
 			const id = randomBytes(8).toString('hex');
 			const created_at = Date.now();
+			const { isFounderEmail } = await import('$lib/server/config');
+			const plan = isFounderEmail(email) ? 'founder' : 'free';
 			await db`
 				INSERT INTO users (id, email, plan, stripe_customer_id, created_at)
-				VALUES (${id}, ${email}, ${'free'}, NULL, ${created_at})`;
-			return { id, email, plan: 'free', stripe_customer_id: null, created_at };
+				VALUES (${id}, ${email}, ${plan}, NULL, ${created_at})`;
+			return { id, email, plan, stripe_customer_id: null, created_at };
 		},
 
 		async setUserPlan(userId, plan) {

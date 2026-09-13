@@ -1,4 +1,4 @@
-export type PlanId = 'free' | 'indie' | 'creator' | 'selfhost';
+export type PlanId = 'free' | 'indie' | 'creator' | 'selfhost' | 'founder';
 
 export type Plan = {
 	id: PlanId;
@@ -41,10 +41,23 @@ export const PLANS: Record<PlanId, Plan> = {
 		sites: 999,
 		pageviews: 50_000_000,
 		description: 'Run on your hardware. Unlimited for practical purposes.'
+	},
+	founder: {
+		id: 'founder',
+		label: 'Founder',
+		priceMonthly: 0,
+		sites: 999,
+		pageviews: 50_000_000,
+		description: 'Operator seat on your own cloud — full access, no Stripe.'
 	}
 };
 
 export function planLimits(plan: string | null | undefined): Plan {
 	if (plan && plan in PLANS) return PLANS[plan as PlanId];
 	return PLANS.free;
+}
+
+/** Complimentary seats that Stripe must never demote. */
+export function isComplimentaryPlan(plan: string | null | undefined): boolean {
+	return plan === 'founder' || plan === 'selfhost';
 }

@@ -1,7 +1,17 @@
 import { getMailFrom, getPublicOrigin, getResendApiKey } from '$lib/server/config';
+import { parseInternalPath } from '$lib/server/auth';
 
-export async function sendMagicLink(email: string, token: string): Promise<{ devLink?: string }> {
-	const link = `${getPublicOrigin()}/auth/verify?token=${encodeURIComponent(token)}`;
+export async function sendMagicLink(
+	email: string,
+	token: string,
+	next?: string | null
+): Promise<{ devLink?: string }> {
+	const url = new URL('/auth/verify', getPublicOrigin());
+	url.searchParams.set('token', token);
+	const safeNext = parseInternalPath(next);
+	if (safeNext) url.searchParams.set('next', safeNext);
+
+	const link = url.toString();
 	const apiKey = getResendApiKey();
 
 	if (!apiKey) {
