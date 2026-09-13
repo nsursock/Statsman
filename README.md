@@ -94,7 +94,7 @@ Paid track: **start free** (Supabase Auth email + password) → upgrade on `/sub
 
 1. **Supabase** — create a project; copy the Postgres connection (URL or `PG*` vars). Prefer the pooled host for the app.
 2. **Supabase Auth** — Authentication → Providers → Email on. URL config:
-   - Site URL = `PUBLIC_ORIGIN` (e.g. `https://statsman-production.up.railway.app`)
+   - Site URL = `PUBLIC_ORIGIN` (e.g. `https://statsman.xyz`)
    - Redirect URLs: `{PUBLIC_ORIGIN}/auth/callback`, `{PUBLIC_ORIGIN}/auth/reset`
    - Redirect allow-list must include `/auth/callback` (and `/auth/reset`). Default confirm links put tokens in the URL hash — Statsman reads those in the browser.
    - **Branded emails** — enable **custom SMTP** (Resend: `smtp.resend.com` / port `465` / user `resend` / pass = API key), then paste HTML from [`email-templates/`](./email-templates/) into Authentication → Email → Templates. See that folder’s README.
@@ -102,8 +102,8 @@ Paid track: **start free** (Supabase Auth email + password) → upgrade on `/sub
 
 ```bash
 STATSMAN_MODE=cloud
-PUBLIC_ORIGIN=https://your-domain.com
-ORIGIN=https://your-domain.com
+PUBLIC_ORIGIN=https://statsman.xyz
+ORIGIN=https://statsman.xyz
 PROTOCOL_HEADER=x-forwarded-proto
 HOST_HEADER=host
 ADDRESS_HEADER=x-forwarded-for
@@ -122,10 +122,10 @@ STRIPE_PRICE_INDIE=price_...
 STRIPE_PRICE_CREATOR=price_...
 ```
 
-4. **Domain** — attach custom domain on Railway; `PUBLIC_ORIGIN` / `ORIGIN` must match HTTPS.
+4. **Domain** — attach `statsman.xyz` on Railway; set `PUBLIC_ORIGIN` / `ORIGIN` to `https://statsman.xyz`. Non-canonical hosts (e.g. `*.up.railway.app`) **301** to that origin (except `/api/health`). Point Supabase Auth Site URL + redirects at the same host.
 5. **Stripe** (when `STATSMAN_BILLING=on`)
    - Create Indie ($9) + Creator ($19) recurring prices; paste IDs into `STRIPE_PRICE_*`.
-   - Webhook endpoint: `https://your-domain.com/api/billing/webhook`
+   - Webhook endpoint: `https://statsman.xyz/api/billing/webhook`
    - Events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice_payment.paid`
    - Copy the endpoint signing secret → `STRIPE_WEBHOOK_SECRET`
 6. **Smoke** — `GET /api/health` should show `"authReady": true` (and `"billingReady": true` when billing is on). Sign up → confirm email if required → log in → open console.

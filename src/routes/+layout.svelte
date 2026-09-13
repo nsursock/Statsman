@@ -11,6 +11,9 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	{#if data.canonical}
+		<link rel="canonical" href={data.canonical} />
+	{/if}
 	<link
 		rel="stylesheet"
 		href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css"

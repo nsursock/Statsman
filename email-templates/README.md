@@ -41,7 +41,7 @@ Keep `{{ .ConfirmationURL }}` and `{{ .Email }}` unchanged.
 
 ## 4. URL config (same as before)
 
-- **Site URL** = `PUBLIC_ORIGIN` (e.g. `https://statsman-production.up.railway.app` or `http://localhost:5173` for local)
+- **Site URL** = `PUBLIC_ORIGIN` (e.g. `https://statsman.xyz` or `http://localhost:5173` for local)
 - **Redirect URLs**: `{PUBLIC_ORIGIN}/auth/callback`, `{PUBLIC_ORIGIN}/auth/reset`
 
 ## 5. App env (optional)

@@ -7,16 +7,21 @@ import {
 
 /** Optional dogfood / first-client tracker injection via public env. */
 export const load: LayoutServerLoad = ({ url }) => {
+	const publicOrigin = (env.PUBLIC_ORIGIN ?? '').trim().replace(/\/$/, '');
+	const canonical =
+		publicOrigin && !/localhost|127\.0\.0\.1/i.test(publicOrigin)
+			? `${publicOrigin}${url.pathname === '/' ? '/' : url.pathname}`
+			: null;
+
 	const siteId = (env.PUBLIC_ANALYTICS_SITE_ID ?? '').trim();
-	if (!siteId) return { analytics: null };
+	if (!siteId) return { analytics: null, canonical, publicOrigin: publicOrigin || null };
 
 	// Don't even load the tracker on console routes (SPA ignore still needed from marketing).
 	if (isStatsmanConsolePath(url.pathname)) {
-		return { analytics: null };
+		return { analytics: null, canonical, publicOrigin: publicOrigin || null };
 	}
 
 	const origin = (env.PUBLIC_ANALYTICS_ORIGIN ?? '').trim().replace(/\/$/, '');
-	const publicOrigin = (env.PUBLIC_ORIGIN ?? '').trim().replace(/\/$/, '');
 	let allowLocalhost = false;
 	try {
 		const host = new URL(origin || publicOrigin || 'http://localhost').hostname;
@@ -27,6 +32,8 @@ export const load: LayoutServerLoad = ({ url }) => {
 	}
 
 	return {
+		canonical,
+		publicOrigin: publicOrigin || null,
 		analytics: {
 			siteId,
 			src: origin ? `${origin}/tracker.js` : '/tracker.js',

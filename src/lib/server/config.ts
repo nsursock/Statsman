@@ -32,6 +32,30 @@ export function getPublicOrigin(): string {
 	);
 }
 
+/** Hostname for PUBLIC_ORIGIN, or null if unset/invalid. */
+export function getCanonicalHostname(): string | null {
+	try {
+		const host = new URL(getPublicOrigin()).hostname.toLowerCase();
+		if (!host || host === 'localhost' || host === '127.0.0.1' || host === '::1') return null;
+		return host;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * When PUBLIC_ORIGIN is a real public host, 301 other hosts (e.g. *.up.railway.app)
+ * there so auth/Stripe/SEO stay on the custom domain.
+ */
+export function shouldRedirectToCanonical(requestHost: string): boolean {
+	const canonical = getCanonicalHostname();
+	if (!canonical) return false;
+	const host = requestHost.split(':')[0].toLowerCase();
+	if (!host || host === canonical) return false;
+	if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
+	return true;
+}
+
 export function getSessionSecret(): string {
 	return env.SESSION_SECRET || env.ADMIN_TOKEN || 'dev-insecure-session-secret-change-me';
 }
