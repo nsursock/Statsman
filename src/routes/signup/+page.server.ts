@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { isCloud, showMarketing } from '$lib/server/config';
 import { parseInternalPath } from '$lib/server/auth';
 
-/** Canonical signup entry — same magic-link auth as login, signup copy. */
+/** Canonical signup entry — same email/password auth as login, signup copy. */
 export const load: PageServerLoad = async ({ url, locals }) => {
 	if (!showMarketing()) {
 		const authed = isCloud() ? Boolean(locals.user) : Boolean(locals.adminOk);

@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import { getAdminToken, getSessionSecret, isCloud } from '$lib/server/config';
-import { getStore, hashToken } from '$lib/server/db';
+import { getStore, hashToken, newToken } from '$lib/server/db';
 import type { User } from '$lib/server/db';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
@@ -8,6 +8,8 @@ export const SESSION_COOKIE = 'statsman_session';
 export const ADMIN_COOKIE = 'statsman_admin';
 /** Open self-host: explicit “entered console” flag so logout actually sticks. */
 export const ACCESS_COOKIE = 'statsman_access';
+
+const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30;
 
 function tokensEqual(a: string, b: string) {
 	const left = Buffer.from(a);
@@ -32,6 +34,14 @@ export function setSessionCookie(cookies: Cookies, token: string, maxAgeSec: num
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: maxAgeSec
 	});
+}
+
+/** After Supabase Auth succeeds — mint Statsman app session (keeps locals.user guards working). */
+export async function establishUserSession(cookies: Cookies, userId: string) {
+	const store = await getStore();
+	const sessionToken = newToken(32);
+	await store.createSession(userId, hashToken(sessionToken), Date.now() + SESSION_MAX_AGE_SEC * 1000);
+	setSessionCookie(cookies, sessionToken, SESSION_MAX_AGE_SEC);
 }
 
 export function clearSessionCookie(cookies: Cookies) {
@@ -87,7 +97,7 @@ export function signState(payload: string): string {
 	return `${payload}.${h}`;
 }
 
-/** Relative in-app path only — blocks open redirects after magic-link / billing. */
+/** Relative in-app path only — blocks open redirects after auth / billing. */
 export function parseInternalPath(raw: string | null | undefined): string | null {
 	if (!raw) return null;
 	const path = raw.trim();

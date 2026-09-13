@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Local self-host smoke (operator console — no Stripe / magic-link).
+ * Local self-host smoke (operator console — no Stripe / SaaS password auth).
  * Expects a running instance with STATSMAN_MODE=selfhost (or hosted).
  *
  *   STATSMAN_MODE=selfhost DATABASE_PATH=./data/smoke-selfhost.db \
@@ -40,13 +40,13 @@ async function run() {
 	assert(health.mode === 'selfhost' || health.mode === 'hosted', `expected selfhost/hosted, got ${health.mode}`);
 	results.push(`mode=${health.mode} db=${health.db}`);
 
-	const magic = await fetch(`${BASE}/api/auth/login`, {
+	const cloudLogin = await fetch(`${BASE}/api/auth/login`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email: 'should-fail@example.com' })
+		body: JSON.stringify({ email: 'should-fail@example.com', password: 'x' })
 	});
-	assert(magic.status >= 400, `magic-link should fail on selfhost, got ${magic.status}`);
-	results.push('magic-link API rejected');
+	assert(cloudLogin.status >= 400, `cloud password login should fail on selfhost, got ${cloudLogin.status}`);
+	results.push('cloud password login rejected');
 
 	const unlock = await fetch(`${BASE}/api/auth/login`, {
 		method: 'POST',

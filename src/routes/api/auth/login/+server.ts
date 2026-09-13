@@ -1,12 +1,17 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getStore, hashToken, newToken } from '$lib/server/db';
-import { sendMagicLink } from '$lib/server/mail';
-import { getAdminToken, isCloud } from '$lib/server/config';
-import { parseInternalPath, setAccessCookie, setAdminCookie } from '$lib/server/auth';
+import { getAdminToken, isCloud, supabaseAuthConfigured } from '$lib/server/config';
+import {
+	establishUserSession,
+	parseInternalPath,
+	setAccessCookie,
+	setAdminCookie
+} from '$lib/server/auth';
+import { createSupabaseAuthClient } from '$lib/server/supabase';
+import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-	const body = await request.json();
+	const body = await request.json().catch(() => ({}));
 
 	// Open self-host: explicit enter (no ADMIN_TOKEN configured)
 	if (!isCloud() && body.openAccess) {
@@ -24,29 +29,35 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		return json({ ok: true, mode: 'admin' });
 	}
 
-	// Self-host / hosted: only token or open-console unlock — never magic-link.
 	if (!isCloud()) {
-		error(400, 'Magic-link login is cloud-only. Unlock with ADMIN_TOKEN or open access.');
+		error(400, 'Password login is cloud-only. Unlock with ADMIN_TOKEN or open access.');
+	}
+
+	if (!supabaseAuthConfigured()) {
+		error(503, 'Supabase Auth is not configured (SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY)');
 	}
 
 	const email = String(body.email ?? '')
 		.trim()
 		.toLowerCase();
+	const password = String(body.password ?? '');
 	if (!email || !email.includes('@')) error(400, 'Valid email required');
+	if (!password) error(400, 'Password required');
+
+	const supabase = createSupabaseAuthClient();
+	const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+	if (authErr) {
+		const msg = authErr.message || 'Invalid email or password';
+		if (/confirm|verified|not confirmed/i.test(msg)) {
+			error(403, 'Confirm your email before signing in — check your inbox.');
+		}
+		error(401, msg);
+	}
+	if (!data.user?.email) error(401, 'Login failed');
+
+	const user = await ensureStatsmanUserFromAuth(data.user.email);
+	await establishUserSession(cookies, user.id);
 
 	const next = parseInternalPath(typeof body.next === 'string' ? body.next : null);
-
-	const store = await getStore();
-	let user = await store.upsertUserByEmail(email);
-	const { ensureFounderPlan } = await import('$lib/server/founder');
-	user = await ensureFounderPlan(user);
-	const token = newToken(24);
-	await store.createLoginToken(user.id, hashToken(token), Date.now() + 15 * 60 * 1000);
-	const result = await sendMagicLink(email, token, next);
-
-	return json({
-		ok: true,
-		mode: 'magic',
-		devLink: result.devLink ?? null
-	});
+	return json({ ok: true, mode: 'password', next: next || '/dashboard' });
 };

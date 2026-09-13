@@ -81,7 +81,7 @@
 				</div>
 				<div class="p-5 space-y-3 text-sm text-scifi-muted">
 					<p class="m-0 text-[var(--scifi-text)]">
-						Sign up with a magic link, add your blogs, paste the tracker. No Stripe until we open
+						Sign up with email and password, add your blogs, paste the tracker. No Stripe until we open
 						paid plans.
 					</p>
 					<ul class="space-y-1 list-none p-0 m-0">

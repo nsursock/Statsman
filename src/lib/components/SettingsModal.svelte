@@ -690,7 +690,7 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 									</p>
 									<p class="text-xs text-scifi-muted m-0 mt-1">
 										{#if isCloud}
-											Cloud account · magic-link auth
+											Cloud account · email + password
 										{:else}
 											Local console · ADMIN_TOKEN / access cookie
 										{/if}

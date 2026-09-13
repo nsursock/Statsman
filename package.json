@@ -33,6 +33,7 @@
 		"@fontsource/jetbrains-mono": "^5.3.0",
 		"@scifiui/core": "file:vendor/scifiui",
 		"@stripe/stripe-js": "^9.16.0",
+		"@supabase/supabase-js": "^2.116.0",
 		"better-sqlite3": "^13.0.3",
 		"geoip-lite": "^2.0.3",
 		"gsap": "^3.15.0",

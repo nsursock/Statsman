@@ -47,18 +47,26 @@ function jarHeader(jar) {
 		.join('; ');
 }
 
-async function login(email) {
+async function login(email, password = 'SmokeTest!234') {
+	const signup = await fetch(`${BASE}/api/auth/signup`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password })
+	});
+	const signupBody = await signup.json().catch(() => ({}));
+	// Signup may succeed, or fail if the user already exists / needs email confirm — then password login.
+	if (!signup.ok && !String(signupBody.error || '').toLowerCase().includes('already')) {
+		// Continue to login; confirm-email projects often still allow password after signup.
+	}
+
 	const start = await fetch(`${BASE}/api/auth/login`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email })
+		body: JSON.stringify({ email, password })
 	});
 	const body = await start.json();
-	assert(start.ok && body.devLink, `login failed for ${email}: ${JSON.stringify(body)}`);
-
-	const verify = await fetch(body.devLink, { redirect: 'manual' });
-	assert(verify.status === 303 || verify.status === 302, `verify status ${verify.status}`);
-	const jar = cookieFrom(verify);
+	assert(start.ok && body.ok, `login failed for ${email}: ${JSON.stringify(body)}`);
+	const jar = cookieFrom(start);
 	assert(jar.statsman_session, 'missing session cookie');
 	return { email, jar, cookie: jarHeader(jar) };
 }

@@ -4,7 +4,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 /** How this deploy behaves:
  *  - selfhost — customer OSS install: app only (login → dashboard)
  *  - hosted   — main product site (Railway + Supabase): marketing + your dashboard
- *  - cloud    — main product site + multi-user magic-link / Stripe
+ *  - cloud    — main product site + multi-user Supabase Auth / Stripe
  */
 export type StatsmanMode = 'selfhost' | 'cloud' | 'hosted';
 
@@ -149,4 +149,27 @@ export function isFounderEmail(email: string | null | undefined): boolean {
 	if (!email) return false;
 	const needle = email.trim().toLowerCase();
 	return getFounderEmails().includes(needle);
+}
+
+/** Supabase Auth (cloud). Prefer SUPABASE_PUBLISHABLE_KEY; SUPABASE_ANON_KEY also works. */
+export function getSupabaseUrl(): string {
+	return (env.SUPABASE_URL || publicEnv.PUBLIC_SUPABASE_URL || '').trim();
+}
+
+export function getSupabaseAnonKey(): string {
+	return (
+		env.SUPABASE_PUBLISHABLE_KEY ||
+		env.SUPABASE_ANON_KEY ||
+		publicEnv.PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+		publicEnv.PUBLIC_SUPABASE_ANON_KEY ||
+		''
+	).trim();
+}
+
+export function getSupabaseServiceRoleKey(): string {
+	return (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+}
+
+export function supabaseAuthConfigured(): boolean {
+	return Boolean(getSupabaseUrl() && getSupabaseAnonKey());
 }
