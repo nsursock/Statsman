@@ -143,6 +143,7 @@ export function getStripeConfig() {
 		secretKey: env.STRIPE_SECRET_KEY || '',
 		publishableKey: publicEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
 		webhookSecret: env.STRIPE_WEBHOOK_SECRET || '',
+		priceStarter: env.STRIPE_PRICE_STARTER || '',
 		priceIndie: env.STRIPE_PRICE_INDIE || '',
 		priceCreator: env.STRIPE_PRICE_CREATOR || ''
 	};

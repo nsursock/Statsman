@@ -88,7 +88,12 @@ In `npm run dev`, a **Demo Site** is auto-created (domain `localhost`): the land
 
 ## Cloud mode (main site)
 
-Paid track: **start free** (Supabase Auth email + password) → upgrade on `/subscribe` (Stripe Payment Element) → manage on `/billing` (plan change, cancel, update card). Billing can stay off during beta (`STATSMAN_BILLING=off`).
+Two billing tiers, controlled by `STATSMAN_BILLING` (selfhost is always free regardless):
+
+- **`beta`** (default) — cloud is free, one tier (1 site, 3k views/mo). No Stripe UI/caps.
+- **`normal`** — Starter ($3) / Indie ($9) / Creator ($19) plans via Stripe. Requires Stripe keys + prices.
+
+Paid track (normal): **sign up** (Supabase Auth email + password) → subscribe on `/subscribe` (Stripe Payment Element) → manage on `/billing` (plan change, cancel, update card). No subscription = no sites.
 
 ### Deploy checklist (Railway + Supabase + Stripe)
 
@@ -111,24 +116,25 @@ SESSION_SECRET=long-random-string
 DATABASE_URL=postgres://...   # or PGHOST/PGUSER/PGPASSWORD/...
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_PUBLISHABLE_KEY=eyJ...   # anon / publishable key (Auth only; RLS not used for app DB)
-# Optional while growing:
-STATSMAN_BILLING=off
+# Billing tier — `beta` (default, free cloud) or `normal` (Free/Indie/Creator via Stripe):
+# STATSMAN_BILLING=normal
 STATSMAN_FOUNDER_EMAILS=you@example.com
-# When billing is on:
+# When STATSMAN_BILLING=normal (Stripe keys required):
 PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_STARTER=price_...
 STRIPE_PRICE_INDIE=price_...
 STRIPE_PRICE_CREATOR=price_...
 ```
 
 4. **Domain** — attach `statsman.xyz` on Railway; set `PUBLIC_ORIGIN` / `ORIGIN` to `https://statsman.xyz`. Non-canonical hosts (e.g. `*.up.railway.app`) **301** to that origin (except `/api/health`). Point Supabase Auth Site URL + redirects at the same host.
-5. **Stripe** (when `STATSMAN_BILLING=on`)
-   - Create Indie ($9) + Creator ($19) recurring prices; paste IDs into `STRIPE_PRICE_*`.
+5. **Stripe** (when `STATSMAN_BILLING=normal`)
+   - Create Starter ($3) + Indie ($9) + Creator ($19) recurring prices; paste IDs into `STRIPE_PRICE_*`.
    - Webhook endpoint: `https://statsman.xyz/api/billing/webhook`
    - Events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice_payment.paid`
    - Copy the endpoint signing secret → `STRIPE_WEBHOOK_SECRET`
-6. **Smoke** — `GET /api/health` should show `"authReady": true` (and `"billingReady": true` when billing is on). Sign up → confirm email if required → log in → open console.
+6. **Smoke** — `GET /api/health` should show `"authReady": true` (and `"billingReady": true` when `STATSMAN_BILLING=normal`). Sign up → confirm email if required → log in → open console.
 
 Do **not** mix test and live keys/prices/webhook secrets.
 
@@ -148,7 +154,7 @@ Flow: Pricing / Settings → signup or login (`next` preserved through Auth redi
 
 | Plan | Sites | Pageviews / mo | Price |
 | --- | --- | --- | --- |
-| Free | 1 | 3,000 | $0 |
+| Starter | 1 | 3,000 | $3 |
 | Indie | 3 | 100,000 | $9 |
 | Creator | 10 | 1,000,000 | $19 |
 | Self-host | practical unlimited | practical unlimited | $0 |

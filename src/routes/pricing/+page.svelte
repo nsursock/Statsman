@@ -5,11 +5,12 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const cloudPlans = [PLANS.free, PLANS.indie, PLANS.creator];
+	const cloudPlans = [PLANS.starter, PLANS.indie, PLANS.creator];
 
-	function upgradeHref(plan: 'indie' | 'creator') {
+	function upgradeHref(plan: 'starter' | 'indie' | 'creator') {
 		if (!data.user) return `/login?mode=signup&next=${encodeURIComponent(`/subscribe?plan=${plan}`)}`;
 		const current = data.user.plan;
+		if (current === plan) return '/billing';
 		if (current === 'indie' || current === 'creator') return '/billing';
 		return `/subscribe?plan=${plan}&next=${encodeURIComponent(`/dashboard?billing=success&plan=${plan}`)}`;
 	}
@@ -31,13 +32,13 @@
 			{#if data.billingEnabled}
 				<h1 class="hero-title text-4xl font-extrabold">Simple pricing</h1>
 				<p class="text-scifi-muted text-sm max-w-xl mx-auto">
-					Hosted cloud with a honest free tier — or self-host forever for $0 on your own machine.
+					Hosted cloud from $3/mo — or self-host forever for $0 on your own machine.
 				</p>
 			{:else}
-				<h1 class="hero-title text-4xl font-extrabold">Free while we grow</h1>
+				<h1 class="hero-title text-4xl font-extrabold">Free beta</h1>
 				<p class="text-scifi-muted text-sm max-w-xl mx-auto">
-					Cloud Statsman is free during beta — no cards, no plans. Self-host stays free forever on
-					Docker.
+					Cloud Statsman is free during beta — 1 site, 3,000 pageviews/mo. Self-host stays free
+					forever on Docker.
 				</p>
 			{/if}
 		</section>
@@ -60,8 +61,8 @@
 							<li>{plan.pageviews.toLocaleString()} pageviews / mo</li>
 							<li>Cookieless tracker</li>
 						</ul>
-						{#if plan.id === 'free'}
-							<a class="btn btn-primary w-full text-center" href="/signup">Start free</a>
+						{#if plan.id === 'starter'}
+							<a class="btn btn-primary w-full text-center" href={upgradeHref('starter')}>Subscribe</a>
 						{:else}
 							<a
 								class="btn btn-primary w-full text-center"
@@ -81,12 +82,12 @@
 				</div>
 				<div class="p-5 space-y-3 text-sm text-scifi-muted">
 					<p class="m-0 text-[var(--scifi-text)]">
-						Sign up with email and password, add your blogs, paste the tracker. No Stripe until we open
-						paid plans.
+						Sign up with email and password, add your blog, paste the tracker. One free tier,
+						no card.
 					</p>
 					<ul class="space-y-1 list-none p-0 m-0">
-						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Practical unlimited sites &amp; views</li>
-						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Same cookieless tracker as paid will use</li>
+						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> 1 site · 3,000 pageviews / mo</li>
+						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Cookieless tracker · ~1 KB</li>
 						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> Self-host anytime if you want your own box</li>
 					</ul>
 					<a class="btn btn-primary w-full text-center" href="/signup">Start free →</a>

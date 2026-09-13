@@ -11,7 +11,10 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	if (!isCloud()) redirect(303, '/');
 	if (!locals.user) redirect(303, '/login');
 
-	const planHint = url.searchParams.get('plan') === 'creator' ? 'creator' : 'indie';
+	const planHint =
+		url.searchParams.get('plan') === 'creator' ? 'creator'
+		: url.searchParams.get('plan') === 'indie' ? 'indie'
+		: 'starter';
 	const next = url.searchParams.get('next') || '/dashboard?billing=success';
 	const subscriptionId = url.searchParams.get('subscription_id');
 	const redirectStatus = url.searchParams.get('redirect_status');

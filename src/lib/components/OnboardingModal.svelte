@@ -35,7 +35,7 @@
 	): 'plan' | 'site' | 'install' {
 		if (flash === 'success') return 'site';
 		if (!cloud) return 'site';
-		// Free beta / already paid / founder — skip the Stripe upsell.
+		// Beta / already paid / founder — skip the Stripe upsell.
 		if (!billingOn || (userPlan && userPlan !== 'free')) return 'site';
 		return 'plan';
 	}
@@ -68,7 +68,7 @@
 				]
 	);
 	const stepIndex = $derived(Math.max(0, steps.findIndex((s) => s.id === step)));
-	const plans = [PLANS.free, PLANS.indie, PLANS.creator];
+	const plans = [PLANS.starter, PLANS.indie, PLANS.creator];
 
 	async function createSite(e: Event) {
 		e.preventDefault();

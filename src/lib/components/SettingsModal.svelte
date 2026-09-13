@@ -722,15 +722,16 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 												</p>
 											{:else if usage.plan === 'beta'}
 												<p class="text-xs text-scifi-muted m-0">
-													Free beta — unlimited for now. Billing comes later.
+													Free beta — 1 site, 3,000 views/mo.
 												</p>
 											{:else if billingEnabled && usage.plan === 'free'}
-												<button type="button" class="btn btn-primary btn-sm" onclick={() => onCheckout('indie')}>
-													Upgrade Indie $9
-												</button>
-												<button type="button" class="btn btn-ghost btn-sm" onclick={() => onCheckout('creator')}>
-													Creator $19
-												</button>
+											<a href="/subscribe?plan=starter" class="btn btn-primary btn-sm">Subscribe Starter $3</a>
+											<button type="button" class="btn btn-ghost btn-sm" onclick={() => onCheckout('indie')}>
+												Indie $9
+											</button>
+											<button type="button" class="btn btn-ghost btn-sm" onclick={() => onCheckout('creator')}>
+												Creator $19
+											</button>
 											{:else if billingEnabled && usage.plan === 'indie'}
 												<button type="button" class="btn btn-primary btn-sm" onclick={onPortal}>
 													Upgrade Creator $19

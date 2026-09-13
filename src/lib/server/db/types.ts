@@ -1,4 +1,4 @@
-export type PlanId = 'free' | 'indie' | 'creator' | 'selfhost';
+export type PlanId = 'free' | 'starter' | 'indie' | 'creator' | 'selfhost';
 
 export type User = {
 	id: string;

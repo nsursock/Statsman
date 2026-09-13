@@ -1,4 +1,4 @@
-export type PlanId = 'free' | 'indie' | 'creator' | 'selfhost' | 'founder';
+export type PlanId = 'free' | 'starter' | 'indie' | 'creator' | 'selfhost' | 'founder';
 
 export type Plan = {
 	id: PlanId;
@@ -14,6 +14,14 @@ export const PLANS: Record<PlanId, Plan> = {
 		id: 'free',
 		label: 'Free',
 		priceMonthly: 0,
+		sites: 0,
+		pageviews: 0,
+		description: 'No active subscription. Subscribe to start tracking.'
+	},
+	starter: {
+		id: 'starter',
+		label: 'Starter',
+		priceMonthly: 3,
 		sites: 1,
 		pageviews: 3_000,
 		description: 'One site, enough to dogfood your blog.'

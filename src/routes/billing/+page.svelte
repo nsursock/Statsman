@@ -35,7 +35,7 @@
 		});
 	});
 
-	async function changePlan(next: 'indie' | 'creator') {
+	async function changePlan(next: 'starter' | 'indie' | 'creator') {
 		busy = next;
 		errorMsg = '';
 		statusMsg = '';
@@ -193,13 +193,14 @@
 					{:else if plan === 'free'}
 						{#if data.snapshot.reconciled}
 							<p class="text-sm text-[var(--scifi-warning)] m-0">
-								No active Stripe subscription. You’re on Free — subscribe again to start a new plan.
+								No active subscription. Subscribe to a plan to start tracking.
 							</p>
 						{:else}
-							<p class="text-sm text-scifi-muted m-0">You’re on Free. Pick a paid plan to upgrade.</p>
+							<p class="text-sm text-scifi-muted m-0">No subscription yet. Pick a plan to start.</p>
 						{/if}
 						<div class="flex flex-wrap gap-2">
-							<a class="btn btn-primary" href="/subscribe?plan=indie">Subscribe Indie $9</a>
+							<a class="btn btn-primary" href="/subscribe?plan=starter">Starter $3</a>
+							<a class="btn btn-ghost" href="/subscribe?plan=indie">Indie $9</a>
 							<a class="btn btn-ghost" href="/subscribe?plan=creator">Creator $19</a>
 						</div>
 					{:else}
@@ -227,7 +228,7 @@
 						{/if}
 
 						<div class="space-y-3">
-							{#each [data.plans.indie, data.plans.creator] as p (p.id)}
+							{#each [data.plans.starter, data.plans.indie, data.plans.creator] as p (p.id)}
 								{@const current = plan === p.id}
 								<div
 									class="glass rounded-lg p-4 flex flex-wrap items-center justify-between gap-3 {current
@@ -250,7 +251,7 @@
 											type="button"
 											class="btn btn-primary btn-sm"
 											disabled={busy !== null}
-											onclick={() => changePlan(p.id === 'creator' ? 'creator' : 'indie')}
+											onclick={() => changePlan(p.id as 'starter' | 'indie' | 'creator')}
 										>
 											{busy === p.id
 												? 'Updating…'
@@ -264,7 +265,7 @@
 						</div>
 
 						<div class="border-t border-[var(--scifi-border)] pt-4 space-y-3">
-							<p class="text-xs uppercase tracking-[0.14em] text-scifi-muted m-0">Downgrade to Free</p>
+							<p class="text-xs uppercase tracking-[0.14em] text-scifi-muted m-0">Cancel subscription</p>
 							{#if data.snapshot.cancelAtPeriodEnd}
 								<p class="text-sm text-scifi-muted m-0">
 									Already scheduled{periodEndLabel ? ` for ${periodEndLabel}` : ' at period end'}. Use Keep

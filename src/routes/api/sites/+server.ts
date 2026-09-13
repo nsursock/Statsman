@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const limits = effectiveCloudLimits(locals.user.plan);
 		const count = await store.countSitesForUser(locals.user.id);
 		if (count >= limits.sites) {
-			error(402, `Plan allows ${limits.sites} site(s). Upgrade to add more.`);
+			error(402, limits.sites === 0 ? 'No active subscription. Subscribe to a plan to create sites.' : `Plan allows ${limits.sites} site(s). Upgrade to add more.`);
 		}
 		const site = await createSite(name, domain, locals.user.id);
 		return json({ site }, { status: 201 });

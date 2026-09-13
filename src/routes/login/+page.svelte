@@ -173,7 +173,7 @@
 									Create your account
 								</h1>
 								<p class="mt-2 text-sm text-scifi-muted m-0">
-									Cookieless analytics for indie blogs — free while we grow.
+									Cookieless analytics for indie blogs — free during beta.
 								</p>
 							</div>
 
@@ -455,8 +455,7 @@
 									<span class="text-scifi-primary glow-text">in sixty seconds.</span>
 								</h2>
 								<p class="text-scifi-muted text-sm leading-relaxed mb-8 m-0">
-									Paste one tracker snippet. See pageviews without cookies, adtech, or plan
-									caps during the free beta.
+									Paste one tracker snippet. See pageviews without cookies or adtech.
 								</p>
 								<ul class="space-y-3 text-sm text-scifi-muted list-none p-0 m-0 text-left max-w-sm mx-auto">
 									<li class="flex gap-2 items-baseline">
@@ -502,7 +501,7 @@
 										<span class="text-scifi-primary">▸</span> Cookieless pageviews · ScifiUI
 									</li>
 									<li class="flex gap-2 items-baseline">
-										<span class="text-scifi-primary">▸</span> Billing when you’re ready
+										<span class="text-scifi-primary">▸</span> Self-host anytime
 									</li>
 								</ul>
 							</div>

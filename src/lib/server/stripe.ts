@@ -4,7 +4,7 @@ import { isComplimentaryPlan } from '$lib/plans';
 import { billingFlagOff, planFromStripePrice } from '$lib/server/plans';
 import { getStore } from '$lib/server/db';
 
-export type PaidPlan = 'indie' | 'creator';
+export type PaidPlan = 'starter' | 'indie' | 'creator';
 
 const LIVE_STATUSES = new Set(['active', 'trialing']);
 /** Do not touch local plan for these — Payment Element may still be open. */
@@ -33,7 +33,8 @@ async function ensureCustomer(userId: string, email: string): Promise<string> {
 
 function priceForPlan(plan: PaidPlan): string {
 	const cfg = getStripeConfig();
-	const price = plan === 'creator' ? cfg.priceCreator : cfg.priceIndie;
+	const price =
+		plan === 'creator' ? cfg.priceCreator : plan === 'indie' ? cfg.priceIndie : cfg.priceStarter;
 	if (!price) throw new Error(`Missing Stripe price for ${plan}`);
 	return price;
 }
@@ -614,7 +615,7 @@ export async function syncPlanFromSubscription(
 		const plan = planFromStripePrice(priceId);
 		if (plan === 'free') {
 			throw new Error(
-				`Stripe price ${priceId || '(missing)'} does not match STRIPE_PRICE_INDIE / CREATOR`
+				`Stripe price ${priceId || '(missing)'} does not match STRIPE_PRICE_STARTER / INDIE / CREATOR`
 			);
 		}
 		await store.setUserPlan(user.id, plan);
@@ -728,13 +729,13 @@ export async function handleStripeWebhook(rawBody: string, signature: string) {
 	return { received: true };
 }
 
-/** Cloud billing: STATSMAN_BILLING=off → free beta; else need Stripe keys + prices. */
+/** Cloud billing: beta → off; normal → need Stripe keys + all three prices. */
 export function billingEnabled() {
 	if (billingFlagOff()) return false;
 	const cfg = getStripeConfig();
 	return (
 		isCloud() &&
-		Boolean(cfg.secretKey && cfg.publishableKey && cfg.priceIndie && cfg.priceCreator)
+		Boolean(cfg.secretKey && cfg.publishableKey && cfg.priceStarter && cfg.priceIndie && cfg.priceCreator)
 	);
 }
 
@@ -745,6 +746,7 @@ export function cloudBillingGaps(): string[] {
 	const gaps: string[] = [];
 	if (!cfg.secretKey) gaps.push('STRIPE_SECRET_KEY');
 	if (!cfg.publishableKey) gaps.push('PUBLIC_STRIPE_PUBLISHABLE_KEY');
+	if (!cfg.priceStarter) gaps.push('STRIPE_PRICE_STARTER');
 	if (!cfg.priceIndie) gaps.push('STRIPE_PRICE_INDIE');
 	if (!cfg.priceCreator) gaps.push('STRIPE_PRICE_CREATOR');
 	if (!cfg.webhookSecret) gaps.push('STRIPE_WEBHOOK_SECRET');

@@ -12,7 +12,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) error(401, 'Login required');
 
 	const body = await request.json().catch(() => ({}));
-	const plan = body.plan === 'creator' ? 'creator' : 'indie';
+	const plan =
+		body.plan === 'creator' ? 'creator'
+		: body.plan === 'indie' ? 'indie'
+		: 'starter';
 	const next =
 		typeof body.successPath === 'string' ? body.successPath : '/dashboard?billing=success';
 

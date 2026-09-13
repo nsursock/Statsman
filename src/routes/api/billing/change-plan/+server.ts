@@ -9,8 +9,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!billingEnabled()) error(503, 'Billing is not configured');
 
 	const body = await request.json().catch(() => ({}));
-	const plan = body.plan === 'creator' ? 'creator' : body.plan === 'indie' ? 'indie' : null;
-	if (!plan) error(400, 'plan must be indie or creator');
+	const plan =
+		body.plan === 'creator' ? 'creator'
+		: body.plan === 'indie' ? 'indie'
+		: body.plan === 'starter' ? 'starter'
+		: null;
+	if (!plan) error(400, 'plan must be starter, indie, or creator');
 
 	try {
 		const result = await changeSubscriptionPlan(locals.user.id, plan);

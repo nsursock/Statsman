@@ -11,14 +11,20 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		redirect(303, authed ? '/dashboard' : '/login');
 	}
 	if (!locals.user) {
-		const plan = url.searchParams.get('plan') === 'creator' ? 'creator' : 'indie';
+		const plan =
+			url.searchParams.get('plan') === 'creator' ? 'creator'
+			: url.searchParams.get('plan') === 'indie' ? 'indie'
+			: 'starter';
 		redirect(303, `/login?mode=signup&next=${encodeURIComponent(`/subscribe?plan=${plan}`)}`);
 	}
 
 	if (!billingEnabled()) redirect(303, '/dashboard');
 
 	const planParam = url.searchParams.get('plan');
-	const plan = planParam === 'creator' ? 'creator' : 'indie';
+	const plan =
+		planParam === 'creator' ? 'creator'
+		: planParam === 'indie' ? 'indie'
+		: 'starter';
 	const next = parseInternalPath(url.searchParams.get('next')) || `/dashboard?billing=success&plan=${plan}`;
 	const cfg = getStripeConfig();
 

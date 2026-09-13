@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getMode, supabaseAuthConfigured, usePostgres } from '$lib/server/config';
-import { cloudBillingGaps } from '$lib/server/stripe';
+import { billingEnabled, cloudBillingGaps } from '$lib/server/stripe';
 
 /** Liveness for Railway / proxies — no DB round-trip. */
 export const GET: RequestHandler = async () => {
@@ -11,7 +11,7 @@ export const GET: RequestHandler = async () => {
 		ok: true,
 		mode,
 		db: usePostgres() ? 'postgres' : 'sqlite',
-		billingReady: mode !== 'cloud' || billingGaps.length === 0,
+		billingReady: billingEnabled(),
 		authReady: mode !== 'cloud' || supabaseAuthConfigured(),
 		...(billingGaps.length ? { billingGaps } : {})
 	});

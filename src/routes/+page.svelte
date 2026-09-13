@@ -370,7 +370,7 @@
 					{#if data.billingEnabled}
 						Free for small ships. <span class="text-scifi-primary glow-text">Paid for fleets.</span>
 					{:else}
-						Cloud free while we grow. <span class="text-scifi-primary glow-text">Self-host forever.</span>
+						Cloud free during beta. <span class="text-scifi-primary glow-text">Self-host forever.</span>
 					{/if}
 				</h2>
 			</div>
@@ -385,11 +385,11 @@
 					<p class="text-scifi-muted text-sm leading-relaxed">
 						{#if data.billingEnabled}
 							Blog, portfolio, side project. Self-host the MIT build with
-							<code class="text-scifi-cyan">docker compose up</code> — unlimited everything — or take the
-							free cloud tier: 1 site, 3,000 pageviews/mo, no card.
+							<code class="text-scifi-cyan">docker compose up</code> — unlimited everything — or start on
+							the Starter cloud plan: 1 site, 3,000 pageviews/mo for $3.
 						{:else}
-							Magic-link cloud for indie blogs — practical unlimited sites &amp; views while we dogfood.
-							No card. Stripe stays off until traction.
+							Magic-link cloud for indie blogs — 1 site, 3,000 pageviews/mo during beta.
+							No card.
 						{/if}
 					</p>
 					<div class="card-actions">
@@ -436,7 +436,7 @@
 						</thead>
 						<tbody>
 							<tr><td>Self-host</td><td>unlimited</td><td>unlimited</td><td class="text-right text-scifi-success">$0</td></tr>
-							<tr><td>Free</td><td>1</td><td>3,000</td><td class="text-right">$0</td></tr>
+							<tr><td>Starter</td><td>1</td><td>3,000</td><td class="text-right text-scifi-cyan">$3</td></tr>
 							<tr><td>Indie</td><td>3</td><td>100,000</td><td class="text-right text-scifi-cyan">$9</td></tr>
 							<tr><td>Creator</td><td>10</td><td>1,000,000</td><td class="text-right text-scifi-primary">$19</td></tr>
 						</tbody>
@@ -455,8 +455,8 @@
 				</div>
 				<div class="p-4 sm:p-5 text-sm text-scifi-muted">
 					<p class="m-0 leading-relaxed">
-						Cloud is free while we grow. If we hit real traction (~1k daily visitors), we’ll turn on
-						Stripe — with clear notice before any paid plans go live.
+						Cloud is free during beta — 1 site, 3,000 pageviews/mo. Self-host anytime
+						for no limits.
 					</p>
 				</div>
 			</div>
@@ -496,7 +496,7 @@
 						{#if data.billingEnabled}
 							3,000 pageviews/mo free · No credit card · MIT self-host
 						{:else}
-							Free cloud beta · No credit card · MIT self-host
+							1 site, 3,000 views/mo free · No credit card · MIT self-host
 						{/if}
 					</p>
 				</div>

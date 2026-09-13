@@ -48,7 +48,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		snapshot,
 		planMeta: PLANS[planId as keyof typeof PLANS],
 		plans: {
-			free: PLANS.free,
+			starter: PLANS.starter,
 			indie: PLANS.indie,
 			creator: PLANS.creator
 		}

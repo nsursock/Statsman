@@ -20,7 +20,7 @@ function warnCloudConfigOnce() {
 	if (gaps.length) {
 		console.warn(`[statsman] cloud billing incomplete — missing ${gaps.join(', ')}`);
 	} else if (!billingEnabled() && isCloud()) {
-		console.info('[statsman] cloud free beta — STATSMAN_BILLING=off (Stripe dormant)');
+		console.info('[statsman] cloud beta — STATSMAN_BILLING=beta (Stripe dormant)');
 	}
 	if (!usePostgres()) {
 		console.warn('[statsman] cloud mode without Postgres — use DATABASE_URL or PG* for production');

@@ -9,7 +9,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!billingEnabled()) error(503, 'Billing is not configured');
 
 	const body = await request.json().catch(() => ({}));
-	const plan = body.plan === 'creator' ? 'creator' : 'indie';
+	const plan =
+		body.plan === 'creator' ? 'creator'
+		: body.plan === 'indie' ? 'indie'
+		: 'starter';
 
 	try {
 		const result = await createSubscriptionPayment(locals.user.id, locals.user.email, plan);
