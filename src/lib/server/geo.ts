@@ -12,6 +12,21 @@ function isNonPublicIp(ip: string): boolean {
 }
 
 /**
+ * Resolve the client IP, tolerating `getClientAddress()` throwing in dev (no
+ * proxy adapter to supply one). Header candidates are still tried first; the
+ * getter only matters when no proxy header is present.
+ */
+export function safeClientIp(request: Request, getter: () => string): string {
+	let fallback = '';
+	try {
+		fallback = getter();
+	} catch {
+		/* dev: getClientAddress unavailable — fall back to headers only */
+	}
+	return resolveClientIp(request, fallback);
+}
+
+/**
  * Prefer proxy client IP headers — set ADDRESS_HEADER on the platform when needed.
  */
 export function resolveClientIp(request: Request, fallback: string): string {

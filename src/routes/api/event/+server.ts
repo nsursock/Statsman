@@ -5,7 +5,7 @@ import { parseUserAgent } from '$lib/server/ua';
 import { hostsMatch, requestHost } from '$lib/server/domain';
 import { isCloud } from '$lib/server/config';
 import { effectiveCloudLimits } from '$lib/server/plans';
-import { geoFromHeaders, resolveClientIp } from '$lib/server/geo';
+import { geoFromHeaders, safeClientIp } from '$lib/server/geo';
 import { parseDurationMs, serializeEventProps } from '$lib/server/event-props';
 import { enqueueEvent } from '$lib/server/event-buffer';
 import {
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const ua = request.headers.get('user-agent') ?? '';
 	const { browser, os, device } = parseUserAgent(ua);
-	const ip = resolveClientIp(request, getClientAddress());
+	const ip = safeClientIp(request, getClientAddress);
 
 	if (ipIsExcluded(ip, site.excluded_ips)) {
 		return new Response(null, { status: 204, headers: CORS });

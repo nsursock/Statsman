@@ -15,7 +15,7 @@ import {
 } from '$lib/server/demo';
 import { needsOnboarding, operatorSites } from '$lib/server/onboarding';
 import { parseChartParam, parsePointsParam } from '$lib/timeseries';
-import { resolveClientIp } from '$lib/server/geo';
+import { safeClientIp } from '$lib/server/geo';
 
 export const load: PageServerLoad = async ({ url, locals, request, getClientAddress }) => {
 	if (isCloud()) {
@@ -111,6 +111,6 @@ export const load: PageServerLoad = async ({ url, locals, request, getClientAddr
 		needsOnboarding: showOnboarding,
 		publicOrigin: getPublicOrigin(),
 		firstOperatorSite: sites[0] ?? null,
-		clientIp: resolveClientIp(request, getClientAddress())
+		clientIp: safeClientIp(request, getClientAddress)
 	};
 };
