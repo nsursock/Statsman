@@ -528,6 +528,7 @@
 						<li><a href="/login">Log in</a></li>
 					{/if}
 					<li><a href="#install">Drop-in tracker</a></li>
+					<li><a href="/contact">Contact</a></li>
 				</ul>
 			</div>
 			<div>

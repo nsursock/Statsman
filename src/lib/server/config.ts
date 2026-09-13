@@ -157,6 +157,11 @@ export function getMailFrom(): string {
 	return env.MAIL_FROM || 'Statsman <onboarding@resend.dev>';
 }
 
+/** Inbound contact address shown on /contact and where contact-form messages are delivered. */
+export function getContactEmail(): string {
+	return (env.CONTACT_EMAIL || 'hello@statsman.xyz').trim();
+}
+
 /**
  * Comma-separated emails that get the Founder plan on cloud (operator seats).
  * Example: STATSMAN_FOUNDER_EMAILS=you@domain.com,cofounder@domain.com

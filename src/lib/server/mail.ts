@@ -1,4 +1,4 @@
-import { getMailFrom, getPublicOrigin, getResendApiKey } from '$lib/server/config';
+import { getContactEmail, getMailFrom, getPublicOrigin, getResendApiKey } from '$lib/server/config';
 import { parseInternalPath } from '$lib/server/auth';
 
 export async function sendMagicLink(
@@ -30,6 +30,48 @@ export async function sendMagicLink(
 			to: [email],
 			subject: 'Your Statsman login link',
 			text: `Sign in to Statsman:\n\n${link}\n\nThis link expires in 15 minutes.`
+		})
+	});
+
+	if (!res.ok) {
+		const body = await res.text();
+		throw new Error(`Resend failed: ${res.status} ${body}`);
+	}
+
+	return {};
+}
+
+/** Forward a /contact form submission to the operator inbox. */
+export async function sendContactMessage(input: {
+	name: string;
+	email: string;
+	message: string;
+}): Promise<{ dev?: boolean }> {
+	const { name, email, message } = input;
+	const to = getContactEmail();
+	const apiKey = getResendApiKey();
+
+	const text = `New contact form message via Statsman:\n\nFrom: ${name} <${email}>\n\n${message}\n\n— sent from ${getPublicOrigin()}`;
+
+	if (!apiKey) {
+		console.info(
+			`[statsman] Contact form (dev, not sent):\nTo: ${to}\nFrom: ${email}\n${text}`
+		);
+		return { dev: true };
+	}
+
+	const res = await fetch('https://api.resend.com/emails', {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			from: getMailFrom(),
+			to: [to],
+			replyTo: email,
+			subject: `Statsman contact · ${name}`,
+			text
 		})
 	});
 
