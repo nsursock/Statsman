@@ -124,6 +124,38 @@
     display: none;
   }
 
+  .cta-secondary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--scifi-text);
+    background: transparent;
+    border: 1px solid var(--scifi-border);
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s;
+  }
+  .cta-secondary:hover {
+    transform: translateY(-2px);
+    border-color: var(--scifi-primary);
+    background: rgba(var(--scifi-primary-rgb), 0.08);
+    box-shadow: 0 0 20px -4px var(--scifi-primary-glow);
+  }
+  .cta-secondary:active {
+    transform: translateY(0);
+  }
+  .cta-secondary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
   .icon-btn {
     position: relative;
     display: inline-flex;

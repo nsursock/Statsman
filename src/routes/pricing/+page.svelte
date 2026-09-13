@@ -82,8 +82,7 @@
 				</div>
 				<div class="p-5 space-y-3 text-sm text-scifi-muted">
 					<p class="m-0 text-[var(--scifi-text)]">
-						Sign up with email and password, add your blog, paste the tracker. One free tier,
-						no card.
+						Sign up with email and password, add your blog, paste the tracker. Starter plan free during beta — no card.
 					</p>
 					<ul class="space-y-1 list-none p-0 m-0">
 						<li class="flex gap-2"><span class="text-scifi-primary">▸</span> 1 site · 3,000 pageviews / mo</li>

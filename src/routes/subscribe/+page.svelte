@@ -16,8 +16,12 @@
 	let subscriptionId = $state<string | null>(null);
 	let ready = $state(false);
 	let busy = $state(false);
-	let errorMsg = $state(data.payError || '');
+	let errorMsg = $state('');
 	let bootMsg = $state('Initializing secure payment channel…');
+
+	$effect(() => {
+		errorMsg = data.payError || '';
+	});
 
 	onMount(() => {
 		enterShell(root);

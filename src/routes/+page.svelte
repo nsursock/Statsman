@@ -156,23 +156,27 @@
 				<div class="flex flex-wrap items-center gap-3">
 					{#if data.demo}
 						<a href="/demo" data-sveltekit-reload class="btn-cta">Try the demo</a>
-						<a href="/demo/console" class="btn btn-primary">Enter console</a>
+						<a href="/demo/console" class="cta-secondary">Enter console</a>
 						{#if !data.authed}
-							<a href="/signup" class="btn btn-ghost">Sign up</a>
+							<a href="/signup" class="cta-secondary">Sign up</a>
 						{:else}
-							<a href="/dashboard" class="btn btn-ghost">Dashboard</a>
+							<a href="/dashboard" class="cta-secondary">Dashboard</a>
 						{/if}
 					{:else if data.authed}
 						<a href="/dashboard" class="btn-cta">Open dashboard</a>
-						<a href="#install" class="btn btn-ghost">Self-host in 60s ↓</a>
+						<a href="#install" class="cta-secondary">Self-host in 60s ↓</a>
 					{:else}
-						<a href="/signup" class="btn-cta">Sign up — 3k views/mo free</a>
-						<a href="/login" class="btn btn-primary">Log in</a>
-						<a href="#install" class="btn btn-ghost">Self-host in 60s ↓</a>
+						<a href="/signup" class="btn-cta">{data.billingEnabled ? 'Sign up — from $3/mo' : 'Sign up — 3k views/mo free'}</a>
+						<a href="/login" class="cta-secondary">Log in</a>
+						<a href="#install" class="cta-secondary">Self-host in 60s ↓</a>
 					{/if}
 				</div>
 				<p class="mt-4 text-[0.68rem] tracking-[0.14em] uppercase text-scifi-muted/70">
+					{#if data.billingEnabled}
+					From $3/mo · No cookie banner needed · Cancel anytime
+				{:else}
 					No credit card · No cookie banner needed · Cancel anytime
+				{/if}
 				</p>
 			</div>
 
@@ -368,7 +372,7 @@
 				<p class="label-kicker text-scifi-cyan mb-2">03 / Pick your orbit</p>
 				<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
 					{#if data.billingEnabled}
-						Free for small ships. <span class="text-scifi-primary glow-text">Paid for fleets.</span>
+						Cloud from $3/mo. <span class="text-scifi-primary glow-text">Self-host free.</span>
 					{:else}
 						Cloud free during beta. <span class="text-scifi-primary glow-text">Self-host forever.</span>
 					{/if}
@@ -378,22 +382,23 @@
 			<div class="grid gap-4 lg:grid-cols-2 mb-4">
 				<div class="metric-card card-bordered" data-reveal>
 					<div class="card-head">
-						<span class="card-label"><span class="label-bar"></span> Cloud — free beta</span>
-						<span class="badge badge-primary">$0</span>
+						<span class="card-label"><span class="label-bar"></span> {data.billingEnabled ? 'Cloud — from $3/mo' : 'Cloud — free beta'}</span>
+						<span class="badge badge-primary">{data.billingEnabled ? '$3+' : '$0'}</span>
 					</div>
-					<div class="card-value mb-1">$0<span class="text-sm text-scifi-muted font-normal"> / for now</span></div>
+					<div class="card-value mb-1">{#if data.billingEnabled}$3<span class="text-sm text-scifi-muted font-normal">/mo</span>{:else}$0<span class="text-sm text-scifi-muted font-normal"> / for now</span>{/if}</div>
 					<p class="text-scifi-muted text-sm leading-relaxed">
 						{#if data.billingEnabled}
-							Blog, portfolio, side project. Self-host the MIT build with
-							<code class="text-scifi-cyan">docker compose up</code> — unlimited everything — or start on
-							the Starter cloud plan: 1 site, 3,000 pageviews/mo for $3.
+							Starter gets you 1 site and 3,000 pageviews/mo. Indie and Creator for more blogs and traffic. Over-cap ingest stays green — dashboard nudges you to upgrade.
 						{:else}
-							Magic-link cloud for indie blogs — 1 site, 3,000 pageviews/mo during beta.
-							No card.
+							Starter plan free during beta — 1 site, 3,000 pageviews/mo. No card.
 						{/if}
 					</p>
 					<div class="card-actions">
-						<a href="/signup" class="btn btn-primary btn-sm">Start free</a>
+						{#if data.billingEnabled}
+							<a href="/pricing" class="btn btn-primary btn-sm">View plans</a>
+						{:else}
+							<a href="/signup" class="btn btn-primary btn-sm">Start free</a>
+						{/if}
 						<a href="#install" class="btn btn-ghost btn-sm">Self-host instead</a>
 					</div>
 				</div>
@@ -404,21 +409,10 @@
 					</div>
 					<div class="card-value mb-1">$0<span class="text-sm text-scifi-muted font-normal"> / forever</span></div>
 					<p class="text-scifi-muted text-sm leading-relaxed">
-						{#if data.billingEnabled}
-							Multiple blogs, real traffic, zero ops. Magic-link login, managed Postgres, Stripe
-							billing, and upgrade banners instead of hard stops. We run the ship; you write the
-							blog.
-						{:else}
-							Run Statsman on your own Docker host — Railway, a VPS, Portainer. Same tracker, your
-							disk, no SaaS dependency.
-						{/if}
+						Run Statsman on your own Docker host — Railway, a VPS, Portainer. Same tracker, your disk, no SaaS dependency.
 					</p>
 					<div class="card-actions">
-						{#if data.billingEnabled}
-							<a href="/pricing" class="btn btn-sm">Compare plans</a>
-						{:else}
-							<a href="/self-host" class="btn btn-sm">Self-host guide</a>
-						{/if}
+						<a href="/self-host" class="btn btn-sm">Self-host guide</a>
 					</div>
 				</div>
 			</div>
@@ -478,23 +472,28 @@
 						STOP RENTING YOUR STATS
 					</h2>
 					<p class="text-scifi-muted text-sm sm:text-base max-w-xl mx-auto mb-8 leading-relaxed">
-						Spin up the free cloud tier in a minute, or <code class="text-scifi-cyan">docker compose up</code>
-						and never think about analytics bills again.
+						{#if data.billingEnabled}
+							Subscribe in a minute, or <code class="text-scifi-cyan">docker compose up</code>
+							and never think about analytics bills again.
+						{:else}
+							Spin up the free cloud tier in a minute, or <code class="text-scifi-cyan">docker compose up</code>
+							and never think about analytics bills again.
+						{/if}
 					</p>
 					<div class="flex flex-wrap justify-center gap-3">
 						{#if data.demo}
-							<a href="/demo" data-sveltekit-reload class="btn-cta">Try the demo</a>
+							<a href="/demo" data-sveltekit-reload class="cta-secondary">Try the demo</a>
 						{/if}
 						{#if data.authed}
-							<a href="/dashboard" class="btn btn-primary">Open dashboard</a>
+							<a href="/dashboard" class="btn-cta">Open dashboard</a>
 						{:else}
-							<a href="/signup" class="btn btn-primary">Sign up</a>
-							<a href="/login" class="btn btn-ghost">Log in</a>
+							<a href="/signup" class="btn-cta">Sign up</a>
+							<a href="/login" class="cta-secondary">Log in</a>
 						{/if}
 					</div>
 					<p class="mt-5 text-[0.68rem] tracking-[0.14em] uppercase text-scifi-muted/70">
 						{#if data.billingEnabled}
-							3,000 pageviews/mo free · No credit card · MIT self-host
+							From $3/mo · MIT self-host free · Cancel anytime
 						{:else}
 							1 site, 3,000 views/mo free · No credit card · MIT self-host
 						{/if}

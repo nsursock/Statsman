@@ -38,7 +38,7 @@ SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
 | --- | --- | --- |
 | Storage | Docker volume (SQLite) or Postgres (`DATABASE_URL`) | Postgres (Supabase) |
 | Auth | Optional `ADMIN_TOKEN` | Supabase Auth (email + password) |
-| Limits | Your machine | Free / Indie $9 / Creator $19 |
+| Limits | Unlimited (your machine) | Founder seat unlimited · else Starter $3 / Indie $9 / Creator $19 |
 | Deploy | **Any Docker host** | Railway (app) + Supabase (DB) |
 
 ## Quick start (dev)
@@ -116,9 +116,9 @@ SESSION_SECRET=long-random-string
 DATABASE_URL=postgres://...   # or PGHOST/PGUSER/PGPASSWORD/...
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_PUBLISHABLE_KEY=eyJ...   # anon / publishable key (Auth only; RLS not used for app DB)
-# Billing tier — `beta` (default, free cloud) or `normal` (Free/Indie/Creator via Stripe):
+# Billing tier — `beta` (default, free cloud) or `normal` (Starter/Indie/Creator via Stripe):
 # STATSMAN_BILLING=normal
-STATSMAN_FOUNDER_EMAILS=you@example.com
+STATSMAN_FOUNDER_EMAILS=you@example.com   # comma-separated; these emails get the Founder seat (unlimited, no Stripe)
 # When STATSMAN_BILLING=normal (Stripe keys required):
 PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_SECRET_KEY=sk_live_...
@@ -152,12 +152,24 @@ Flow: Pricing / Settings → signup or login (`next` preserved through Auth redi
 
 ### Plans
 
+Two **special cases** get unlimited use, then three paid plans for everyone else.
+
+**Special cases (unlimited, no Stripe):**
+
+| Plan | Sites | Pageviews / mo | Price | How |
+| --- | --- | --- | --- | --- |
+| Self-host | practical unlimited | practical unlimited | $0 | Run the Docker box yourself (`STATSMAN_MODE=selfhost`) — follow [`/self-host`](/self-host) |
+| Founder | practical unlimited | practical unlimited | $0 | Operator seat on your own cloud — list your email in `STATSMAN_FOUNDER_EMAILS` |
+
+**Paid plans (cloud, via Stripe when `STATSMAN_BILLING=normal`):**
+
 | Plan | Sites | Pageviews / mo | Price |
 | --- | --- | --- | --- |
 | Starter | 1 | 3,000 | $3 |
 | Indie | 3 | 100,000 | $9 |
 | Creator | 10 | 1,000,000 | $19 |
-| Self-host | practical unlimited | practical unlimited | $0 |
+
+Self-host and Founder are complimentary seats — Stripe webhooks never demote them.
 
 Over-cap ingest returns `204` (blogs stay green); dashboard shows an upgrade banner.
 

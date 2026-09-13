@@ -14,7 +14,7 @@
 	let confirmPassword = $state('');
 	let adminToken = $state('');
 	let status = $state('');
-	let errorMsg = $state(data.authError || '');
+	let errorMsg = $state('');
 	let busy = $state(false);
 	let sent = $state(false);
 	let showReset = $state(false);
@@ -29,6 +29,10 @@
 
 	$effect(() => {
 		mode = data.mode === 'signup' ? 'signup' : 'login';
+	});
+
+	$effect(() => {
+		errorMsg = data.authError || '';
 	});
 
 	function loginHref(m: 'login' | 'signup') {

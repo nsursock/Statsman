@@ -11,11 +11,13 @@
 	let confirm = $state('');
 	let busy = $state(false);
 	let errorMsg = $state('');
-	let tokenHash = $state(data.tokenHash);
-	let otpType = $state(data.type);
+	let tokenHash = $state('');
+	let otpType = $state('');
 
 	onMount(() => {
 		enterShell(root);
+		tokenHash = data.tokenHash ?? '';
+		otpType = data.type ?? '';
 		if (!tokenHash && typeof window !== 'undefined') {
 			const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 			const th = hash.get('token_hash');
