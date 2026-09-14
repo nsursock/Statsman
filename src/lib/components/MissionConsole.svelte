@@ -263,6 +263,9 @@
 		</div>
 		<div class="p-3 sm:p-4">
 			<GeoGlobe cities={stats.cities} height={280} />
+			<p class="text-scifi-muted text-[0.6rem] tracking-[0.1em] uppercase text-center mt-2 mb-0">
+				Locations estimated from IP
+			</p>
 			<div class="geo-split mt-3">
 				<div>
 					<p class="label-kicker m-0 mb-2">Countries</p>
