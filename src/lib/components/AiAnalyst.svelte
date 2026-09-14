@@ -36,10 +36,15 @@
 	let summary: string | null = $state(null);
 	let aiPowered = $state(false);
 	let loading = $state(false);
+	let refreshing = $state(false);
 	let error: string | null = $state(null);
+	/** Monotonic request ID — stale fetches are silently discarded. */
+	let fetchId = 0;
 	/** Track what we last fetched so we don't refetch on every poll cycle. */
 	let lastSiteId = '';
 	let lastDays = 0;
+	/** Whether we've ever fetched for the current params. */
+	let hasFetched = false;
 
 	// ── Ask state ──────────────────────────────────────────────────
 	let question = $state('');
@@ -65,13 +70,13 @@
 		engagement_change: '\u{1F4CA}'
 	};
 
-	async function fetchExplain() {
+	async function fetchExplain(force = false) {
 		if (!browser || !siteId) return;
-		// Only show full loading spinner on first load — keep existing
-		// insights visible during background refetches to avoid flashing.
 		const isFirstLoad = insights.length === 0 && !summary;
 		loading = isFirstLoad;
+		refreshing = force;
 		error = null;
+		const reqId = ++fetchId;
 		try {
 			const res = await fetch('/api/ai/explain', {
 				method: 'POST',
@@ -80,16 +85,23 @@
 			});
 			if (!res.ok) throw new Error(`Failed (${res.status})`);
 			const data = (await res.json()) as ExplainResponse;
+			// Discard stale responses — a newer fetch may have completed first.
+			if (reqId !== fetchId) return;
 			insights = data.insights;
 			summary = data.summary;
 			aiPowered = data.aiPowered;
 			aiAvailable = data.aiAvailable;
 			lastSiteId = siteId;
 			lastDays = days;
+			hasFetched = true;
 		} catch (e) {
+			if (reqId !== fetchId) return;
 			error = e instanceof Error ? e.message : 'Failed to load insights';
 		} finally {
-			loading = false;
+			if (reqId === fetchId) {
+				loading = false;
+				refreshing = false;
+			}
 		}
 	}
 
@@ -146,17 +158,24 @@
 
 	function toggle() {
 		open = !open;
+		// Fetch on first open, or if site/days changed while closed.
+		if (open && (!hasFetched || siteId !== lastSiteId || days !== lastDays)) {
+			fetchExplain();
+		}
 	}
 
-	// Fetch on mount and when site/days actually change.
-	// We compare against lastSiteId/lastDays so that parent re-renders
-	// (e.g. live polling with invalidateAll) don't trigger a refetch
-	// when the values haven't actually changed.
+	function refresh() {
+		fetchExplain(true);
+	}
+
+	// Refetch when site or days change while the drawer is open.
+	// We do NOT refetch on every parent re-render (e.g. live polling)
+	// — only when the actual params change.
 	$effect(() => {
+		if (!browser || !open) return;
 		void siteId;
 		void days;
-		if (!browser) return;
-		if (siteId === lastSiteId && days === lastDays && (insights.length > 0 || summary)) return;
+		if (siteId === lastSiteId && days === lastDays && hasFetched) return;
 		fetchExplain();
 	});
 
@@ -227,7 +246,29 @@
 				</span>
 				<button
 					type="button"
-					class="ai-close-btn"
+					class="ai-refresh-btn"
+				onclick={refresh}
+				disabled={loading || refreshing}
+				aria-label="Refresh analysis"
+				title="Refresh analysis"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					width="14"
+					height="14"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"
+					class={refreshing ? 'ai-spin' : ''}
+				>
+					<path d="M21 12a9 9 0 11-3-6.7L21 8" />
+					<path d="M21 3v5h-5" />
+				</svg>
+			</button>
+			<button
+				type="button"
+				class="ai-close-btn"
 					onclick={() => (open = false)}
 					aria-label="Close"
 				>
@@ -478,6 +519,35 @@
 		border-color: var(--scifi-primary);
 	}
 
+	.ai-refresh-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 8px;
+		border: 1px solid var(--scifi-border-accent);
+		background: transparent;
+		color: var(--scifi-muted);
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	.ai-refresh-btn:hover:not(:disabled) {
+		color: var(--scifi-primary);
+		border-color: var(--scifi-primary);
+	}
+	.ai-refresh-btn:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+	.ai-spin {
+		animation: ai-spin 0.8s linear infinite;
+	}
+	@keyframes ai-spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+
 	.ai-drawer-body {
 		flex: 1;
 		overflow-y: auto;
@@ -680,7 +750,8 @@
 		.ai-cursor,
 		.ai-fab,
 		.ai-drawer,
-		.ai-backdrop {
+		.ai-backdrop,
+		.ai-spin {
 			animation: none;
 			transition: none;
 		}

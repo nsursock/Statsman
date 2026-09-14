@@ -62,6 +62,26 @@ function classifyError(status: number, msg: string): OpenRouterError {
 	return new OpenRouterError(`OpenRouter ${status}: ${msg.slice(0, 300)}`, status, 'api_error');
 }
 
+/**
+ * Strip OpenRouter safety/moderation annotations that some models append
+ * to the response content (e.g. "User Safety: safe", "Safety: safe").
+ * These are metadata, not part of the answer the user needs to see.
+ */
+const SAFETY_RE = /(?:User\s*)?Safety\s*:\s*\w+\s*\.?$/i;
+
+/** Strip safety annotation from a complete response. Safe to trim. */
+function stripSafety(text: string): string {
+	return text.replace(SAFETY_RE, '').trim();
+}
+
+/**
+ * Strip safety annotation from a streaming delta WITHOUT trimming —
+ * trimming individual chunks would eat the spaces between words.
+ */
+function stripSafetyDelta(text: string): string {
+	return text.replace(SAFETY_RE, '');
+}
+
 /** Non-streaming chat completion. Returns the full text. */
 export async function chat(
 	messages: ChatMessage[],
@@ -100,7 +120,7 @@ export async function chat(
 		usage?: { prompt_tokens?: number; completion_tokens?: number };
 	};
 
-	const content = data.choices?.[0]?.message?.content?.trim();
+	const content = stripSafety(data.choices?.[0]?.message?.content?.trim() ?? '');
 	if (!content) throw new OpenRouterError('OpenRouter returned an empty completion', 200, 'empty');
 
 	return {
@@ -191,7 +211,10 @@ export async function* streamChat(
 				}
 
 				const content = chunk.choices?.[0]?.delta?.content;
-				if (content) yield content;
+				if (content) {
+					const cleaned = stripSafetyDelta(content);
+					if (cleaned) yield cleaned;
+				}
 			}
 		}
 	} finally {
