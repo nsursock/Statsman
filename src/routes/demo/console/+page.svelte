@@ -5,6 +5,7 @@
 	import { enterShell, gsap } from '@scifiui/core/js';
 	import ConsoleFrame from '$lib/components/ConsoleFrame.svelte';
 	import MissionConsole from '$lib/components/MissionConsole.svelte';
+	import AiAnalyst from '$lib/components/AiAnalyst.svelte';
 	import DashboardNav from '$lib/components/DashboardNav.svelte';
 	import type { PageData } from './$types';
 
@@ -115,6 +116,13 @@
 				emptyStream="No events yet — open the fake blog and click around."
 				onPointsChange={switchPoints}
 				onChartChange={switchChart}
+			/>
+
+			<AiAnalyst
+				siteId={data.site.id}
+					siteName={data.site.name}
+					days={data.days}
+					aiAvailable={data.aiAvailable}
 			/>
 
 			<div class="cta-panel" data-deck>

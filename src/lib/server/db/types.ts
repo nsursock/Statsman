@@ -124,6 +124,8 @@ export type Store = {
 	/** Optional batch insert (Postgres). Falls back to per-row insertEvent. */
 	insertEvents?(events: EventInput[]): Promise<void>;
 	getStats(siteId: string, days?: number, points?: number): Promise<StatsSummary>;
+	/** Stats for an explicit [startMs, endMs) window — used by the AI Analyst for period comparison. */
+	getStatsRange(siteId: string, startMs: number, endMs: number, points?: number): Promise<StatsSummary>;
 	getRecentEvents(siteId: string, limit?: number): Promise<RecentEvent[]>;
 	siteHasEvents(siteId: string): Promise<boolean>;
 

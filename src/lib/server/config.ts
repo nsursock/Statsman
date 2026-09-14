@@ -203,3 +203,20 @@ export function getSupabaseServiceRoleKey(): string {
 export function supabaseAuthConfigured(): boolean {
 	return Boolean(getSupabaseUrl() && getSupabaseAnonKey());
 }
+
+/** OpenRouter — powers the AI Analyst (Explain + Ask). */
+export function getOpenRouterApiKey(): string | undefined {
+	return env.OPENROUTER_API_KEY || undefined;
+}
+
+export function getOpenRouterModel(): string {
+	return (env.OPENROUTER_MODEL || 'openai/gpt-4o-mini').trim();
+}
+
+export function getOpenRouterBaseUrl(): string {
+	return (env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+}
+
+export function aiConfigured(): boolean {
+	return Boolean(getOpenRouterApiKey());
+}

@@ -163,25 +163,27 @@ function buildStats(
 	db: Database.Database,
 	siteId: string,
 	days: number,
-	points = DEFAULT_POINTS
+	points = DEFAULT_POINTS,
+	endMs?: number
 ): StatsSummary {
-	const since = Date.now() - days * 24 * 60 * 60 * 1000;
+	const end = endMs ?? Date.now();
+	const since = end - days * 24 * 60 * 60 * 1000;
 	const targetPoints = clampPoints(points);
 
 	const totals = db
 		.prepare(
 			`SELECT COUNT(*) AS pageviews, COUNT(DISTINCT visitor_hash) AS visitors
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'`
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'`
 		)
-		.get(siteId, since) as { pageviews: number; visitors: number };
+		.get(siteId, since, end) as { pageviews: number; visitors: number };
 
 	const visitPages = db
 		.prepare(
 			`SELECT visitor_hash, COUNT(*) AS pages
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY visitor_hash`
 		)
-		.all(siteId, since) as { visitor_hash: string; pages: number }[];
+		.all(siteId, since, end) as { visitor_hash: string; pages: number }[];
 
 	const singlePageVisits = visitPages.filter((v) => v.pages === 1).length;
 	const bounceRate =
@@ -195,67 +197,67 @@ function buildStats(
 	const pathRows = db
 		.prepare(
 			`SELECT path, COUNT(*) AS views FROM events
-			 WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY path`
 		)
-		.all(siteId, since) as { path: string; views: number }[];
+		.all(siteId, since, end) as { path: string; views: number }[];
 	const { topPages, campaigns, utmSources, utmMediums } = aggregatePathMeta(pathRows, 10);
 
 	const topReferrers = db
 		.prepare(
 			`SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS referrer, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY referrer ORDER BY views DESC LIMIT 10`
 		)
-		.all(siteId, since) as { referrer: string; views: number }[];
+		.all(siteId, since, end) as { referrer: string; views: number }[];
 
 	const browsers = db
 		.prepare(
 			`SELECT COALESCE(browser, 'Unknown') AS browser, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY browser ORDER BY views DESC LIMIT 8`
 		)
-		.all(siteId, since) as { browser: string; views: number }[];
+		.all(siteId, since, end) as { browser: string; views: number }[];
 
 	const operatingSystems = db
 		.prepare(
 			`SELECT COALESCE(os, 'Unknown') AS os, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY os ORDER BY views DESC LIMIT 8`
 		)
-		.all(siteId, since) as { os: string; views: number }[];
+		.all(siteId, since, end) as { os: string; views: number }[];
 
 	const devices = db
 		.prepare(
 			`SELECT COALESCE(device, 'Unknown') AS device, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY device ORDER BY views DESC LIMIT 8`
 		)
-		.all(siteId, since) as { device: string; views: number }[];
+		.all(siteId, since, end) as { device: string; views: number }[];
 
 	const languages = db
 		.prepare(
 			`SELECT COALESCE(NULLIF(lang, ''), 'Unknown') AS label, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY lang ORDER BY views DESC LIMIT 8`
 		)
-		.all(siteId, since) as { label: string; views: number }[];
+		.all(siteId, since, end) as { label: string; views: number }[];
 
 	const screens = db
 		.prepare(
 			`SELECT COALESCE(NULLIF(screen, ''), 'Unknown') AS label, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY screen ORDER BY views DESC LIMIT 8`
 		)
-		.all(siteId, since) as { label: string; views: number }[];
+		.all(siteId, since, end) as { label: string; views: number }[];
 
 	const countries = db
 		.prepare(
 			`SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS label, COUNT(*) AS views
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY country ORDER BY views DESC LIMIT 12`
 		)
-		.all(siteId, since) as { label: string; views: number }[];
+		.all(siteId, since, end) as { label: string; views: number }[];
 
 	const cities = db
 		.prepare(
@@ -263,11 +265,11 @@ function buildStats(
 				COALESCE(NULLIF(country, ''), '?') AS country,
 				AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*) AS views
 			 FROM events
-			 WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 				AND lat IS NOT NULL AND lng IS NOT NULL
 			 GROUP BY city, country ORDER BY views DESC LIMIT 40`
 		)
-		.all(siteId, since) as {
+		.all(siteId, since, end) as {
 		city: string;
 		country: string;
 		lat: number;
@@ -278,19 +280,19 @@ function buildStats(
 	const customEvents = db
 		.prepare(
 			`SELECT name AS label, COUNT(*) AS views FROM events
-			 WHERE site_id = ? AND created_at >= ?
+			 WHERE site_id = ? AND created_at >= ? AND created_at < ?
 				AND name NOT IN ('pageview', 'engagement')
 			 GROUP BY name ORDER BY views DESC LIMIT 12`
 		)
-		.all(siteId, since) as { label: string; views: number }[];
+		.all(siteId, since, end) as { label: string; views: number }[];
 
 	const durationRows = db
 		.prepare(
 			`SELECT visitor_hash, MAX(duration_ms) AS duration_ms FROM events
-			 WHERE site_id = ? AND created_at >= ? AND name = 'engagement' AND duration_ms IS NOT NULL
+			 WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'engagement' AND duration_ms IS NOT NULL
 			 GROUP BY visitor_hash`
 		)
-		.all(siteId, since) as { visitor_hash: string; duration_ms: number }[];
+		.all(siteId, since, end) as { visitor_hash: string; duration_ms: number }[];
 	const avgVisitDurationSec =
 		durationRows.length === 0
 			? 0
@@ -305,10 +307,10 @@ function buildStats(
 		.prepare(
 			`SELECT (created_at - (created_at % ?)) AS bucket,
 				COUNT(*) AS pageviews, COUNT(DISTINCT visitor_hash) AS visitors
-			 FROM events WHERE site_id = ? AND created_at >= ? AND name = 'pageview'
+			 FROM events WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 			 GROUP BY bucket ORDER BY bucket ASC`
 		)
-		.all(bucketMs, siteId, since) as {
+		.all(bucketMs, siteId, since, end) as {
 		bucket: number;
 		pageviews: number;
 		visitors: number;
@@ -455,6 +457,11 @@ export function createSqliteStore(): Store {
 
 		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
 			return buildStats(db, siteId, days, points);
+		},
+
+		async getStatsRange(siteId, startMs, endMs, points = DEFAULT_POINTS) {
+			const days = Math.max(1, Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)));
+			return buildStats(db, siteId, days, points, endMs);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {

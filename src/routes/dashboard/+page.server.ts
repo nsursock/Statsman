@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { PageServerLoad } from './$types';
 import { listSites, getStats, getStore, currentYyyymm } from '$lib/server/db';
-import { getPublicOrigin, isCloud } from '$lib/server/config';
+import { getPublicOrigin, isCloud, aiConfigured } from '$lib/server/config';
 import { effectiveCloudLimits } from '$lib/server/plans';
 import { billingEnabled, reconcileUserPlanFromStripe } from '$lib/server/stripe';
 import { ensureFounderPlan } from '$lib/server/founder';
@@ -103,6 +103,7 @@ export const load: PageServerLoad = async ({ url, locals, request, getClientAddr
 		recentEvents: hasEvents ? recentEvents : [],
 		isCloud: isCloud(),
 		isDev: dev,
+		aiAvailable: aiConfigured(),
 		demoSiteId: demo?.id ?? null,
 		user: locals.user,
 		usage,

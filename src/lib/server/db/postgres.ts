@@ -160,9 +160,11 @@ async function buildStats(
 	db: postgres.Sql,
 	siteId: string,
 	days: number,
-	points = DEFAULT_POINTS
+	points = DEFAULT_POINTS,
+	endMs?: number
 ): Promise<StatsSummary> {
-	const since = Date.now() - days * 24 * 60 * 60 * 1000;
+	const end = endMs ?? Date.now();
+	const since = end - days * 24 * 60 * 60 * 1000;
 	const targetPoints = clampPoints(points);
 	const bucketMs = bucketMsForTarget(days, targetPoints);
 
@@ -185,65 +187,65 @@ async function buildStats(
 	] = await Promise.all([
 		db`
 			SELECT COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'`,
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'`,
 		db`
 			SELECT visitor_hash, COUNT(*)::int AS pages
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY visitor_hash`,
 		db`
 			SELECT path, COUNT(*)::int AS views FROM events
-			WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY path`,
 		db`
 			SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS referrer, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY referrer ORDER BY views DESC LIMIT 10`,
 		db`
 			SELECT COALESCE(browser, 'Unknown') AS browser, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY browser ORDER BY views DESC LIMIT 8`,
 		db`
 			SELECT COALESCE(os, 'Unknown') AS os, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY os ORDER BY views DESC LIMIT 8`,
 		db`
 			SELECT COALESCE(device, 'Unknown') AS device, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY device ORDER BY views DESC LIMIT 8`,
 		db`
 			SELECT COALESCE(NULLIF(lang, ''), 'Unknown') AS label, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY lang ORDER BY views DESC LIMIT 8`,
 		db`
 			SELECT COALESCE(NULLIF(screen, ''), 'Unknown') AS label, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY screen ORDER BY views DESC LIMIT 8`,
 		db`
 			SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS label, COUNT(*)::int AS views
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY country ORDER BY views DESC LIMIT 12`,
 		db`
 			SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS city,
 				COALESCE(NULLIF(country, ''), '?') AS country,
 				AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*)::int AS views
 			FROM events
-			WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 				AND lat IS NOT NULL AND lng IS NOT NULL
 			GROUP BY city, country ORDER BY views DESC LIMIT 40`,
 		db`
 			SELECT name AS label, COUNT(*)::int AS views FROM events
-			WHERE site_id = ${siteId} AND created_at >= ${since}
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end}
 				AND name NOT IN ('pageview', 'engagement')
 			GROUP BY name ORDER BY views DESC LIMIT 12`,
 		db`
 			SELECT visitor_hash, MAX(duration_ms)::int AS duration_ms FROM events
-			WHERE site_id = ${siteId} AND created_at >= ${since}
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end}
 				AND name = 'engagement' AND duration_ms IS NOT NULL
 			GROUP BY visitor_hash`,
 		db`
 			SELECT (created_at - (created_at % ${bucketMs}::bigint)) AS bucket,
 				COUNT(*)::int AS pageviews, COUNT(DISTINCT visitor_hash)::int AS visitors
-			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND name = 'pageview'
+			FROM events WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 			GROUP BY 1 ORDER BY 1 ASC`
 	]);
 
@@ -463,6 +465,11 @@ export async function createPostgresStore(): Promise<Store> {
 
 		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
 			return buildStats(db, siteId, days, points);
+		},
+
+		async getStatsRange(siteId, startMs, endMs, points = DEFAULT_POINTS) {
+			const days = Math.max(1, Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)));
+			return buildStats(db, siteId, days, points, endMs);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {

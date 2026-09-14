@@ -5,6 +5,7 @@
 	import { enterShell, gsap, createToaster } from '@scifiui/core/js';
 	import ConsoleFrame from '$lib/components/ConsoleFrame.svelte';
 	import MissionConsole from '$lib/components/MissionConsole.svelte';
+	import AiAnalyst from '$lib/components/AiAnalyst.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import DashboardNav from '$lib/components/DashboardNav.svelte';
@@ -399,6 +400,12 @@
 					onPointsChange={switchPoints}
 					onChartChange={switchChart}
 				/>
+			<AiAnalyst
+				siteId={data.site.id}
+					siteName={data.site.name}
+					days={data.days}
+					aiAvailable={data.aiAvailable}
+			/>
 			{:else if !data.site}
 				<section class="empty-deck" data-deck>
 					<p class="label-kicker text-scifi-primary m-0 mb-2">// No signal lock</p>

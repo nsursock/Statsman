@@ -77,3 +77,7 @@ export async function insertEvent(
 export async function getStats(siteId: string, days = 7, points?: number) {
 	return (await getStore()).getStats(siteId, days, points);
 }
+
+export async function getStatsRange(siteId: string, startMs: number, endMs: number, points?: number) {
+	return (await getStore()).getStatsRange(siteId, startMs, endMs, points);
+}

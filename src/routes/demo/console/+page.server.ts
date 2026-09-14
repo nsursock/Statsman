@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getStats, getStore } from '$lib/server/db';
+import { aiConfigured } from '$lib/server/config';
 import { demoSeedEnabled, getDemoSite, seedDemoTraffic } from '$lib/server/demo';
 import { parseChartParam, parsePointsParam } from '$lib/timeseries';
 
@@ -24,6 +25,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		points,
 		chart,
 		stats,
-		recentEvents
+		recentEvents,
+		aiAvailable: aiConfigured()
 	};
 };
