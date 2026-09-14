@@ -36,7 +36,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const path = String(body.path ?? '/');
 	const site = siteId ? await getSite(siteId) : undefined;
 	if (!site) {
-		return json({ ok: false, error: 'Unknown site' }, { status: 404, headers: CORS });
+		// Soft-drop unknown sites (missing/garbage siteId) instead of 404.
+		// Matches the soft-drop pattern used for dev hosts, excluded IPs, and quota.
+		// tracker.js ignores the response body; a 204 avoids inflating 4xx metrics
+		// and avoids leaking whether a site id exists to scanners.
+		return new Response(null, { status: 204, headers: CORS });
 	}
 
 	const host = requestHost(request);
