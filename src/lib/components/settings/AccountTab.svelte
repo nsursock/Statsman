@@ -30,7 +30,7 @@
 		{#if isCloud}
 			Cloud account · email + password
 		{:else}
-			Local console · ADMIN_TOKEN / access cookie
+			Local console · STATSMAN_ADMIN_TOKEN / access cookie
 		{/if}
 	</p>
 </div>

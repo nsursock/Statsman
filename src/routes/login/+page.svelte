@@ -560,7 +560,7 @@
 						<form class="p-5 space-y-4" onsubmit={submit}>
 							<p class="text-scifi-muted text-sm m-0 leading-relaxed">
 								This console is locked. Enter the
-								<code class="text-scifi-cyan">ADMIN_TOKEN</code> from your environment to continue.
+								<code class="text-scifi-cyan">STATSMAN_ADMIN_TOKEN</code> from your environment to continue.
 							</p>
 							<label class="block space-y-1.5">
 								<span class="label-kicker">Admin token</span>
@@ -589,7 +589,7 @@
 						</div>
 						<div class="p-5 space-y-4">
 							<p class="text-scifi-muted text-sm m-0 leading-relaxed">
-								No <code class="text-scifi-cyan">ADMIN_TOKEN</code> is set — enter once to unlock this
+								No <code class="text-scifi-cyan">STATSMAN_ADMIN_TOKEN</code> is set — enter once to unlock this
 								machine’s console.
 							</p>
 							{#if errorMsg}

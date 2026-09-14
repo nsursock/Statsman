@@ -5,11 +5,11 @@ services:
       - "3000:3000"
     environment:
       STATSMAN_MODE: selfhost
-      DATABASE_PATH: /data/statsman.db
+      STATSMAN_DATABASE_PATH: /data/statsman.db
       PUBLIC_ORIGIN: http://localhost:3000
       # Optional lock for /dashboard
-      # ADMIN_TOKEN: change-me
-      SESSION_SECRET: change-me-in-production
+      # STATSMAN_ADMIN_TOKEN: change-me
+      STATSMAN_SESSION_SECRET: change-me-in-production
     volumes:
       - statsman-data:/data
     restart: unless-stopped

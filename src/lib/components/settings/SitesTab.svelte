@@ -49,18 +49,16 @@
 						<span class="badge badge-primary shrink-0">active</span>
 					{/if}
 				</button>
-				{#if activeSiteId !== s.id}
-					<button
-						type="button"
-						class="site-remove"
-						title="Stop tracking {s.name}"
-						aria-label="Stop tracking {s.name}"
-						disabled={deletingId === s.id}
-						onclick={(e) => onAskRemove(s, e)}
-					>
-						{deletingId === s.id ? '…' : 'Remove'}
-					</button>
-				{/if}
+				<button
+					type="button"
+					class="site-remove"
+					title="Stop tracking {s.name}"
+					aria-label="Stop tracking {s.name}"
+					disabled={deletingId === s.id}
+					onclick={(e) => onAskRemove(s, e)}
+				>
+					{deletingId === s.id ? '…' : 'Remove'}
+				</button>
 			</li>
 		{/each}
 	</ul>

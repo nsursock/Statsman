@@ -5,10 +5,10 @@
 
 	const ENV_VARS = `STATSMAN_MODE=selfhost
 PUBLIC_ORIGIN=https://YOUR_PUBLIC_HTTPS_URL
-ADMIN_TOKEN=
-SESSION_SECRET=
+STATSMAN_ADMIN_TOKEN=
+STATSMAN_SESSION_SECRET=
 # Pick one storage:
-# DATABASE_PATH=/data/statsman.db          # SQLite on a Docker/Railway volume
+# STATSMAN_DATABASE_PATH=/data/statsman.db  # SQLite on a Docker/Railway volume
 # DATABASE_URL=postgres://...              # Supabase / any Postgres (wins over PATH)`;
 
 	const SNIPPET =
@@ -120,7 +120,7 @@ SESSION_SECRET=
 					<strong class="text-[var(--scifi-text)] font-medium">Postgres:</strong> create a database
 					(Supabase, Neon, RDS, …) and set <code class="text-scifi-cyan">DATABASE_URL</code>. When
 					that URI is <code class="text-scifi-cyan">postgres://…</code>, Statsman uses Postgres and
-					ignores <code class="text-scifi-cyan">DATABASE_PATH</code>.
+					ignores <code class="text-scifi-cyan">STATSMAN_DATABASE_PATH</code>.
 				</p>
 				<div class="relative">
 					<pre
@@ -164,7 +164,7 @@ SESSION_SECRET=
 					<li>Open your Statsman URL — self-host starts at login.</li>
 					<li>
 						Enter the console (or unlock with
-						<code class="text-scifi-cyan">ADMIN_TOKEN</code>).
+						<code class="text-scifi-cyan">STATSMAN_ADMIN_TOKEN</code>).
 					</li>
 					<li>
 						Add a site: name + domain of the website you’ll track (host only, e.g.

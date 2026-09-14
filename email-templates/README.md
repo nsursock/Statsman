@@ -51,7 +51,7 @@ Resend on **Railway/app** is only needed if Statsman itself sends mail (legacy m
 ```bash
 # Optional — app-side Resend (not required for Supabase Auth SMTP)
 # RESEND_API_KEY=re_xxx
-# MAIL_FROM=Statsman <auth@yourdomain.com>
+# RESEND_MAIL_FROM=Statsman <auth@yourdomain.com>
 ```
 
 ## Notes

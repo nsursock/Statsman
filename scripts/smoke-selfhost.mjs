@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Local self-host smoke (operator console — no Stripe / SaaS password auth).
- * Expects a running instance with STATSMAN_MODE=selfhost (or hosted).
+ * Expects a running instance with STATSMAN_MODE=selfhost.
  *
- *   STATSMAN_MODE=selfhost DATABASE_PATH=./data/smoke-selfhost.db \
+ *   STATSMAN_MODE=selfhost STATSMAN_DATABASE_PATH=./data/smoke-selfhost.db \
  *     PUBLIC_ORIGIN=http://localhost:5174 npm run dev -- --port 5174
  *   SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
  */
@@ -37,7 +37,7 @@ async function run() {
 
 	const health = await fetch(`${BASE}/api/health`).then((r) => r.json());
 	assert(health.ok, 'health not ok');
-	assert(health.mode === 'selfhost' || health.mode === 'hosted', `expected selfhost/hosted, got ${health.mode}`);
+	assert(health.mode === 'selfhost', `expected selfhost, got ${health.mode}`);
 	results.push(`mode=${health.mode} db=${health.db}`);
 
 	const cloudLogin = await fetch(`${BASE}/api/auth/login`, {
@@ -54,8 +54,8 @@ async function run() {
 		body: JSON.stringify({ openAccess: true })
 	});
 	const unlockBody = await unlock.json().catch(() => ({}));
-	if (unlock.status === 400 && /ADMIN_TOKEN/i.test(String(unlockBody.message || ''))) {
-		assert(false, 'ADMIN_TOKEN is set — unset it for this smoke or extend script to use the token');
+	if (unlock.status === 400 && /STATSMAN_ADMIN_TOKEN/i.test(String(unlockBody.message || ''))) {
+		assert(false, 'STATSMAN_ADMIN_TOKEN is set — unset it for this smoke or extend script to use the token');
 	}
 	assert(unlock.ok && unlockBody.mode === 'open', `open unlock failed: ${unlock.status} ${JSON.stringify(unlockBody)}`);
 	const jar = cookieFrom(unlock);

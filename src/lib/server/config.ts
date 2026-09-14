@@ -3,26 +3,22 @@ import { env as publicEnv } from '$env/dynamic/public';
 
 /** How this deploy behaves:
  *  - selfhost — customer OSS install: app only (login → dashboard)
- *  - hosted   — main product site (Railway + Supabase): marketing + your dashboard
  *  - cloud    — main product site + multi-user Supabase Auth / Stripe
  */
-export type StatsmanMode = 'selfhost' | 'cloud' | 'hosted';
+export type StatsmanMode = 'selfhost' | 'cloud';
 
 export function getMode(): StatsmanMode {
 	const raw = (env.STATSMAN_MODE ?? 'selfhost').toLowerCase();
-	if (raw === 'cloud') return 'cloud';
-	if (raw === 'hosted') return 'hosted';
-	return 'selfhost';
+	return raw === 'cloud' ? 'cloud' : 'selfhost';
 }
 
 export function isCloud(): boolean {
 	return getMode() === 'cloud';
 }
 
-/** Marketing landing, pricing, signup — not shown on pure self-host installs. */
+/** Marketing landing, pricing, signup — shown on cloud only. */
 export function showMarketing(): boolean {
-	const mode = getMode();
-	return mode === 'cloud' || mode === 'hosted';
+	return isCloud();
 }
 
 export function getPublicOrigin(): string {
@@ -57,11 +53,11 @@ export function shouldRedirectToCanonical(requestHost: string): boolean {
 }
 
 export function getSessionSecret(): string {
-	return env.SESSION_SECRET || env.ADMIN_TOKEN || 'dev-insecure-session-secret-change-me';
+	return env.STATSMAN_SESSION_SECRET || env.SESSION_SECRET || env.STATSMAN_ADMIN_TOKEN || env.ADMIN_TOKEN || 'dev-insecure-session-secret-change-me';
 }
 
 export function getAdminToken(): string | undefined {
-	return env.ADMIN_TOKEN || undefined;
+	return env.STATSMAN_ADMIN_TOKEN || env.ADMIN_TOKEN || undefined;
 }
 
 export type PostgresConfig =
@@ -131,7 +127,7 @@ export function getDatabaseUrl(): string | undefined {
 }
 
 export function getDatabasePath(): string {
-	return env.DATABASE_PATH || './data/statsman.db';
+	return env.STATSMAN_DATABASE_PATH || env.DATABASE_PATH || './data/statsman.db';
 }
 
 export function usePostgres(): boolean {
@@ -154,12 +150,12 @@ export function getResendApiKey(): string | undefined {
 }
 
 export function getMailFrom(): string {
-	return env.MAIL_FROM || 'Statsman <onboarding@resend.dev>';
+	return env.RESEND_MAIL_FROM || env.MAIL_FROM || 'Statsman <onboarding@resend.dev>';
 }
 
 /** Inbound contact address shown on /contact and where contact-form messages are delivered. */
 export function getContactEmail(): string {
-	return (env.CONTACT_EMAIL || 'hello@statsman.xyz').trim();
+	return (env.RESEND_CONTACT_EMAIL || env.STATSMAN_CONTACT_EMAIL || env.CONTACT_EMAIL || 'hello@statsman.xyz').trim();
 }
 
 /**

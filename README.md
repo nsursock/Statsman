@@ -10,13 +10,13 @@ Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 
 ## How it fits together
 
-| Deploy | Who | `STATSMAN_MODE` | What `/` does |
-| --- | --- | --- | --- |
-| **Self-host** (any Docker host) | You run your own box | `selfhost` | Login → dashboard (no marketing, no Stripe) |
-| **Main site** (Railway + Supabase) | Your dogfood / marketing | `hosted` | Landing + your operator dashboard |
-| **Cloud SaaS** (Railway + Supabase) | Paying customers (Free → Stripe) | `cloud` | Landing, email/password (Supabase Auth), plans, billing |
+| Deploy | Who | `STATSMAN_MODE` | `STATSMAN_BILLING` | What `/` does |
+| --- | --- | --- | --- | --- |
+| **Self-host** (any Docker host) | You run your own box | `selfhost` | — | Login → dashboard (no marketing, no Stripe) |
+| **Cloud beta** (Railway + Supabase) | Free product site | `cloud` | `beta` | Landing + Supabase Auth, no Stripe |
+| **Cloud paid** (Railway + Supabase) | Paying customers | `cloud` | `normal` | Landing, email/password, plans, billing |
 
-**Both product paths are supported:** customers either **self-host** (`STATSMAN_MODE=selfhost`) or use **your cloud** (`STATSMAN_MODE=cloud`). Never set `cloud` on a customer’s Docker box — that forces SaaS login and plan caps.
+**Two modes:** `selfhost` (free, unlimited) or `cloud` (marketing + Supabase Auth). On cloud, `STATSMAN_BILLING=beta` (free, default) or `normal` (Starter/Indie/Creator via Stripe). Never set `cloud` on a customer's Docker box — that forces SaaS login and plan caps.
 
 Same codebase. Cloud customers sign up on the main site. Self-host customers follow [`/self-host`](/self-host).
 
@@ -27,7 +27,7 @@ Local smokes:
 node scripts/smoke-multi-client.mjs
 
 # Self-host operator (separate port + DB file)
-STATSMAN_MODE=selfhost DATABASE_PATH=./data/smoke-selfhost.db \
+STATSMAN_MODE=selfhost STATSMAN_DATABASE_PATH=./data/smoke-selfhost.db \
   PUBLIC_ORIGIN=http://localhost:5174 npm run dev -- --port 5174
 SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
 ```
@@ -37,7 +37,7 @@ SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
 | | Self-host (OSS) | Cloud (on main site) |
 | --- | --- | --- |
 | Storage | Docker volume (SQLite) or Postgres (`DATABASE_URL`) | Postgres (Supabase) |
-| Auth | Optional `ADMIN_TOKEN` | Supabase Auth (email + password) |
+| Auth | Optional `STATSMAN_ADMIN_TOKEN` | Supabase Auth (email + password) |
 | Limits | Unlimited (your machine) | Founder seat unlimited · else Starter $3 / Indie $9 / Creator $19 |
 | Deploy | **Any Docker host** | Railway (app) + Supabase (DB) |
 
@@ -49,7 +49,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). For local marketing UI set `STATSMAN_MODE=hosted`. Pure app UX: `selfhost`.
+Open [http://localhost:5173](http://localhost:5173). For local marketing UI set `STATSMAN_MODE=cloud`. Pure app UX: `selfhost`.
 
 ## Self-host (production)
 
@@ -65,8 +65,8 @@ STATSMAN_MODE=selfhost
 PUBLIC_ORIGIN=https://YOUR_PUBLIC_HTTPS_URL
 # SQLite (volume) — or Postgres:
 # DATABASE_URL=postgres://...
-ADMIN_TOKEN=...
-SESSION_SECRET=...
+STATSMAN_ADMIN_TOKEN=...
+STATSMAN_SESSION_SECRET=...
 ```
 
 ```html
@@ -112,7 +112,7 @@ ORIGIN=https://statsman.xyz
 PROTOCOL_HEADER=x-forwarded-proto
 HOST_HEADER=host
 ADDRESS_HEADER=x-forwarded-for
-SESSION_SECRET=long-random-string
+STATSMAN_SESSION_SECRET=long-random-string
 DATABASE_URL=postgres://...   # or PGHOST/PGUSER/PGPASSWORD/...
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_PUBLISHABLE_KEY=eyJ...   # anon / publishable key (Auth only; RLS not used for app DB)
@@ -179,7 +179,7 @@ Over-cap ingest returns `204` (blogs stay green); dashboard shows an upgrade ban
 - **Traffic exclusions** — browser opt-out (`statsman_optout` / `statsman.disableTracking()`), localhost/dev host ignore (default on), optional per-site excluded IPs (filter-only; never stored on events)
 - **CSRF origin check disabled** for tracker beacons (`text/plain` cross-origin POSTs); allowlist above is the gate
 - **Site ownership** in cloud (users → sites)
-- **Optional `ADMIN_TOKEN`** locks self-host dashboard + site CRUD
+- **Optional `STATSMAN_ADMIN_TOKEN`** locks self-host dashboard + site CRUD
 - Tracker + `/api/event` stay public
 
 ## Stack

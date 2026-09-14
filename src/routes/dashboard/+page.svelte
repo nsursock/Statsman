@@ -178,7 +178,6 @@
 
 	function askRemoveSite(site: { id: string; name: string }, e: MouseEvent) {
 		e.stopPropagation();
-		if (data.site?.id === site.id) return;
 		pendingDelete = { id: site.id, name: site.name };
 	}
 
@@ -188,8 +187,9 @@
 	}
 
 	async function confirmRemoveSite() {
-		if (!pendingDelete || data.site?.id === pendingDelete.id) return;
+		if (!pendingDelete) return;
 		const site = pendingDelete;
+		const wasActive = data.site?.id === site.id;
 		deletingId = site.id;
 		message = '';
 		try {
@@ -198,6 +198,9 @@
 			if (!res.ok) throw new Error(payload.message || 'Failed to remove site');
 			pendingDelete = null;
 			await invalidateAll();
+			if (wasActive) {
+				await goto(`/dashboard?days=${data.days}&points=${data.points}&chart=${data.chart}`);
+			}
 			message = `Removed “${site.name}”.`;
 		} catch (err) {
 			message = err instanceof Error ? err.message : 'Remove failed.';

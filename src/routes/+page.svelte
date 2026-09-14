@@ -343,7 +343,7 @@
 					<ul class="text-sm space-y-2 list-none p-0 m-0">
 						<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span><span class="text-scifi-muted">Domain allowlist on <code class="text-scifi-cyan">/api/event</code> keeps junk out</span></li>
 						<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span><span class="text-scifi-muted">Top pages &amp; referrers, live in the ScifiUI console</span></li>
-						<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span><span class="text-scifi-muted">Optional <code class="text-scifi-cyan">ADMIN_TOKEN</code> locks self-host dashboards</span></li>
+						<li class="flex gap-2 items-baseline"><span class="text-scifi-primary">▸</span><span class="text-scifi-muted">Optional <code class="text-scifi-cyan">STATSMAN_ADMIN_TOKEN</code> locks self-host dashboards</span></li>
 					</ul>
 				</div>
 

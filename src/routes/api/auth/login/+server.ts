@@ -13,9 +13,9 @@ import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const body = await request.json().catch(() => ({}));
 
-	// Open self-host: explicit enter (no ADMIN_TOKEN configured)
+	// Open self-host: explicit enter (no STATSMAN_ADMIN_TOKEN configured)
 	if (!isCloud() && body.openAccess) {
-		if (getAdminToken()) error(400, 'ADMIN_TOKEN is set — unlock with the token instead');
+		if (getAdminToken()) error(400, 'STATSMAN_ADMIN_TOKEN is set — unlock with the token instead');
 		setAccessCookie(cookies);
 		return json({ ok: true, mode: 'open' });
 	}
@@ -30,7 +30,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	}
 
 	if (!isCloud()) {
-		error(400, 'Password login is cloud-only. Unlock with ADMIN_TOKEN or open access.');
+		error(400, 'Password login is cloud-only. Unlock with STATSMAN_ADMIN_TOKEN or open access.');
 	}
 
 	if (!supabaseAuthConfigured()) {
