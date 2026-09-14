@@ -7,4 +7,9 @@
   <url><loc>https://statsman.xyz/login</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://statsman.xyz/signup</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://statsman.xyz/demo</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://statsman.xyz/demo/console</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://statsman.xyz/compare</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://statsman.xyz/vs/plausible</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://statsman.xyz/vs/fathom</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://statsman.xyz/vs/umami</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

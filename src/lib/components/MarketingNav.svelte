@@ -16,7 +16,7 @@
 	type NavLink = { href: string; label: string; icon: string; reload?: boolean };
 
 	const links = $derived.by((): NavLink[] => [
-		...(demo ? [{ href: '/demo', label: 'Demo', icon: 'ti-player-play', reload: true }] : []),
+		...(demo ? [{ href: '/demo/console', label: 'Demo', icon: 'ti-player-play' }] : []),
 		{ href: '#why', label: 'Why', icon: 'ti-bulb' },
 		{ href: '#how', label: 'How', icon: 'ti-route' },
 		{ href: '#plans', label: 'Plans', icon: 'ti-stack-2' },

@@ -143,9 +143,9 @@
 					OWN THE SIGNAL
 				</h1>
 				<p class="hero-tagline text-scifi-muted text-sm sm:text-base max-w-xl mb-7 leading-relaxed">
-					Cookieless pageview analytics for indie blogs. No trackers, no fingerprints, no
-					third-party SaaS reading over your shoulder — just your numbers, on your box, in a
-					console that feels like a starship.
+					Live analytics for indie blogs — see who's on your site right now, where they're
+					coming from, and what's trending. No cookies, no surveillance, just your numbers in
+					a console that feels like a starship.
 				</p>
 				<div class="flex flex-wrap gap-2 mb-8">
 					<span class="feature-pill">Zero cookies</span>
@@ -155,14 +155,14 @@
 				</div>
 				<div class="flex flex-wrap items-center gap-3">
 					{#if data.demo}
-						<a href="/demo" data-sveltekit-reload class="btn-cta">Try the demo</a>
-						<a href="/demo/console" class="cta-secondary">Enter console</a>
-						{#if !data.authed}
-							<a href="/signup" class="cta-secondary">Sign up</a>
+						<a href="/demo/console" class="btn-cta">Try the demo</a>
+					{#if !data.authed}
+							<a href="/signup" class="cta-secondary">{data.billingEnabled ? 'Sign up — from $3/mo' : 'Sign up — free'}</a>
 						{:else}
 							<a href="/dashboard" class="cta-secondary">Dashboard</a>
 						{/if}
-					{:else if data.authed}
+						<a href="#install" class="cta-secondary">Self-host in 60s ↓</a>
+				{:else if data.authed}
 						<a href="/dashboard" class="btn-cta">Open dashboard</a>
 						<a href="#install" class="cta-secondary">Self-host in 60s ↓</a>
 					{:else}
@@ -457,7 +457,46 @@
 			{/if}
 		</section>
 
-		<!-- ============ CTA ============ -->
+		<!-- ============ SECTION 04 — SWITCHING ============ -->
+	<section id="switching" class="scroll-mt-28 mb-20 sm:mb-28">
+		<div class="mb-8" data-reveal>
+			<p class="label-kicker text-scifi-cyan mb-2">04 / Switching?</p>
+			<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+				Already using <span class="text-scifi-primary glow-text">Plausible, Fathom, or Umami?</span>
+			</h2>
+			<p class="text-scifi-muted text-sm mt-2 max-w-xl leading-relaxed">
+				Here's why people switch — honest comparisons, feature by feature.
+			</p>
+		</div>
+		<div class="grid gap-4 sm:grid-cols-3">
+			<a href="/vs/plausible" class="pane pane-bracketed p-5 transition-transform duration-300 hover:-translate-y-1 no-underline group block" data-reveal>
+				<p class="label-kicker text-scifi-text mb-2">vs Plausible</p>
+				<p class="text-scifi-muted text-sm leading-relaxed m-0">
+					One-third the price. No ClickHouse. Live demo.
+				</p>
+				<p class="text-scifi-cyan text-xs mt-3 m-0 group-hover:text-scifi-primary transition-colors">See comparison →</p>
+			</a>
+			<a href="/vs/fathom" class="pane pane-bracketed p-5 transition-transform duration-300 hover:-translate-y-1 no-underline group block" data-reveal>
+				<p class="label-kicker text-scifi-text mb-2">vs Fathom</p>
+				<p class="text-scifi-muted text-sm leading-relaxed m-0">
+					$3/mo instead of $15. Free self-host. Same simplicity.
+				</p>
+				<p class="text-scifi-cyan text-xs mt-3 m-0 group-hover:text-scifi-primary transition-colors">See comparison →</p>
+			</a>
+			<a href="/vs/umami" class="pane pane-bracketed p-5 transition-transform duration-300 hover:-translate-y-1 no-underline group block" data-reveal>
+				<p class="label-kicker text-scifi-text mb-2">vs Umami</p>
+				<p class="text-scifi-muted text-sm leading-relaxed m-0">
+					Same MIT freedom. A console you actually want to open.
+				</p>
+				<p class="text-scifi-cyan text-xs mt-3 m-0 group-hover:text-scifi-primary transition-colors">See comparison →</p>
+			</a>
+		</div>
+		<p class="text-xs text-scifi-muted mt-4">
+			<a href="/compare" class="text-scifi-cyan no-underline hover:text-scifi-primary">All comparisons →</a>
+		</p>
+	</section>
+
+	<!-- ============ CTA ============ -->
 		<section class="mb-20 sm:mb-24" data-reveal>
 			<div class="console-panel relative overflow-hidden p-8 sm:p-14 text-center">
 				<div class="grid-floor opacity-40"></div>
@@ -482,7 +521,7 @@
 					</p>
 					<div class="flex flex-wrap justify-center gap-3">
 						{#if data.demo}
-							<a href="/demo" data-sveltekit-reload class="cta-secondary">Try the demo</a>
+							<a href="/demo/console" class="cta-secondary">Try the demo</a>
 						{/if}
 						{#if data.authed}
 							<a href="/dashboard" class="btn-cta">Open dashboard</a>
@@ -505,7 +544,7 @@
 
 	<!-- ============ FOOTER ============ -->
 	<footer class="footer relative z-10">
-		<div class="mx-auto w-full max-w-6xl grid gap-10 sm:grid-cols-[1.5fr_1fr_1fr] px-2 sm:px-4">
+		<div class="mx-auto w-full max-w-6xl grid gap-10 sm:grid-cols-[1.5fr_1fr_1fr_1fr] px-2 sm:px-4">
 			<div>
 				<a href="/" class="brand-mark text-lg no-underline">Statsman</a>
 				<p class="text-scifi-muted text-xs leading-relaxed mt-3 mb-4 max-w-xs">
@@ -518,7 +557,7 @@
 				<p class="footer-title">Product</p>
 				<ul class="space-y-2 list-none p-0 m-0 text-xs">
 					{#if data.demo}
-						<li><a href="/demo" data-sveltekit-reload>Live demo</a></li>
+						<li><a href="/demo/console">Live demo</a></li>
 					{/if}
 					<li><a href="/pricing">Pricing</a></li>
 					{#if data.authed}
@@ -538,6 +577,15 @@
 					<li><code class="text-scifi-cyan">docker compose up</code></li>
 					<li><span class="text-scifi-muted">Any Docker host · SQLite or Postgres</span></li>
 					<li><span class="text-scifi-muted">MIT license</span></li>
+				</ul>
+			</div>
+			<div>
+				<p class="footer-title">Compare</p>
+				<ul class="space-y-2 list-none p-0 m-0 text-xs">
+					<li><a href="/vs/plausible">vs Plausible</a></li>
+					<li><a href="/vs/fathom">vs Fathom</a></li>
+					<li><a href="/vs/umami">vs Umami</a></li>
+					<li><a href="/compare">All comparisons</a></li>
 				</ul>
 			</div>
 		</div>
