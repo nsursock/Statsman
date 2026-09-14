@@ -65,7 +65,7 @@
 	<div class="mkt-nav__bar">
 		<a href="/" class="mkt-nav__brand" onclick={close}>
 			<span class="mkt-nav__orb" aria-hidden="true">
-				<i class="ti ti-chart-dots-3"></i>
+				<i class="ti ti-chart-bar"></i>
 			</span>
 			<span class="brand-mark mkt-nav__wordmark">Statsman</span>
 			<span class="mkt-nav__pulse" aria-hidden="true"></span>

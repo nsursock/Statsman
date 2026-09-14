@@ -81,7 +81,7 @@
 		<div class="dash-nav__top">
 			<a href="/" class="dash-nav__brand" onclick={closeMenus}>
 				<span class="dash-nav__orb" aria-hidden="true">
-					<i class="ti ti-chart-dots-3"></i>
+					<i class="ti ti-chart-bar"></i>
 				</span>
 				<span class="brand-mark dash-nav__wordmark">Statsman</span>
 				<span class="dash-nav__mode">{modeLabel}</span>
