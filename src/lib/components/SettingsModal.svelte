@@ -7,6 +7,7 @@
 		readStoredTheme,
 		type ThemeId
 	} from '$lib/themes';
+	import InstallButton from './InstallButton.svelte';
 
 	export type SettingsTab = 'sites' | 'tracker' | 'appearance' | 'demo' | 'account';
 
@@ -755,6 +756,16 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 								{/if}
 
 								<a class="btn btn-ghost btn-sm mt-4" href="/auth/logout">Log out</a>
+
+							<div class="install-row">
+								<div class="min-w-0">
+									<p class="m-0 text-sm font-semibold">Install app</p>
+									<p class="m-0 mt-1 text-[0.7rem] text-scifi-muted leading-relaxed">
+										Add Statsman to your home screen — it opens full-screen, like a native app.
+									</p>
+								</div>
+								<InstallButton />
+							</div>
 							{/if}
 						</div>
 					{/key}
@@ -1209,6 +1220,15 @@ statsman.track('purchase', { plan: 'indie' })`}</pre>
 			rgba(var(--scifi-primary-rgb), 0.08),
 			rgba(var(--scifi-surface-1-rgb), 0.5)
 		);
+	}
+	.install-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--scifi-border);
 	}
 	.usage-card {
 		margin-top: 0.75rem;

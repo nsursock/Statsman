@@ -302,7 +302,7 @@
 <style>
 	.dash-nav {
 		position: sticky;
-		top: 0.55rem;
+		top: calc(env(safe-area-inset-top, 0px) + 0.55rem);
 		z-index: 40;
 		margin-bottom: 1.1rem;
 		isolation: isolate;
@@ -719,7 +719,7 @@
 
 	@media (min-width: 640px) {
 		.dash-nav {
-			top: 0.75rem;
+			top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
 			margin-bottom: 1.25rem;
 		}
 		.dash-nav__glass {
