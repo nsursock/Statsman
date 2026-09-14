@@ -82,6 +82,20 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const daySalt = new Date().toISOString().slice(0, 10);
 	const geo = geoFromHeaders(request, ip);
 
+	// TEMPORARY: verify Railway receives Cloudflare geo headers. Remove after confirming.
+	if (process.env.GEO_DEBUG) {
+		console.debug('[geo-debug]', {
+			ip,
+			cf: {
+				country: request.headers.get('cf-ipcountry'),
+				city: request.headers.get('cf-ipcity'),
+				latitude: request.headers.get('cf-iplatitude'),
+				longitude: request.headers.get('cf-iplongitude')
+			},
+			resolved: geo
+		});
+	}
+
 	let referrer: string | null = body.referrer ? String(body.referrer) : null;
 	if (referrer) {
 		try {

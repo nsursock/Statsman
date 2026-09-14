@@ -70,19 +70,37 @@ export function lookupGeo(ip: string | null | undefined): GeoLookup {
 	}
 }
 
-/** Prefer Cloudflare / proxy country hint when geoip misses (still no raw IP stored). */
+function parseCoord(val: string | null): number | null {
+	if (!val) return null;
+	const n = parseFloat(val);
+	return Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null;
+}
+
+function parseCityHeader(val: string | null): string | null {
+	if (!val) return null;
+	try {
+		val = decodeURIComponent(val);
+	} catch {
+		/* invalid url-encoding, keep raw */
+	}
+	const trimmed = val.trim();
+	return trimmed ? trimmed.slice(0, 80) : null;
+}
+
+/** Prefer Cloudflare / proxy hints when geoip misses (still no raw IP stored). */
 export function geoFromHeaders(request: Request, ip: string): GeoLookup {
 	const fromIp = lookupGeo(ip);
-	if (fromIp.country) return fromIp;
 
-	const cf = request.headers.get('cf-ipcountry');
-	if (cf && cf !== 'XX' && cf !== 'T1') {
-		return {
-			country: cf.slice(0, 2).toUpperCase(),
-			city: null,
-			lat: null,
-			lng: null
-		};
-	}
-	return fromIp;
+	const cfCountry = request.headers.get('cf-ipcountry');
+	const validCfCountry =
+		cfCountry && cfCountry !== 'XX' && cfCountry !== 'T1'
+			? cfCountry.slice(0, 2).toUpperCase()
+			: null;
+
+	const country = fromIp.country ?? validCfCountry;
+	const city = fromIp.city ?? parseCityHeader(request.headers.get('cf-ipcity'));
+	const lat = fromIp.lat ?? parseCoord(request.headers.get('cf-iplatitude'));
+	const lng = fromIp.lng ?? parseCoord(request.headers.get('cf-iplongitude'));
+
+	return { country, city, lat, lng };
 }
