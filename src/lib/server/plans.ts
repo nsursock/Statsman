@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
-import { type Plan, type PlanId, planLimits, PLANS } from '$lib/plans';
+import { type Plan, type PlanId, planLimits, PLANS, isComplimentaryPlan } from '$lib/plans';
 
-export { planLimits, PLANS, type PlanId };
+export { planLimits, PLANS, isComplimentaryPlan, type PlanId };
 
 export type BillingMode = 'beta' | 'normal';
 
@@ -30,6 +30,9 @@ export function billingFlagOff(): boolean {
  * In normal mode, 'free' = 0 sites (no subscription) — must subscribe to create sites.
  */
 export function effectiveCloudLimits(plan: string | null | undefined): Plan {
+	// Complimentary seats (founder, selfhost) always keep their real limits,
+	// even in beta billing mode — they are operator seats, not beta users.
+	if (isComplimentaryPlan(plan)) return planLimits(plan);
 	if (billingFlagOff()) return PLANS.starter;
 	return planLimits(plan);
 }
