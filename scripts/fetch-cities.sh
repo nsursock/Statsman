@@ -8,13 +8,17 @@ set -euo pipefail
 OUT="${1:-./data/worldcities.db}"
 mkdir -p "$(dirname "$OUT")"
 
-# CDNs don't serve the .db binary, so install the package temporarily and
-# extract the bundled database. This adds build-time deps only (not shipped).
+# `npm pack` downloads just the package tarball (no dependency install, no
+# native modules) and extracts the bundled worldcities.db.zip from it.
+# This avoids pulling in geo2city's 85 build-time deps (including native sqlite3).
 echo "Fetching worldcities.db → $OUT"
 TMP_DIR="$(mktemp -d)"
-npm install --prefix "$TMP_DIR" geo2city --no-save --no-audit --no-fund >/dev/null 2>&1
-cp "$TMP_DIR/node_modules/geo2city/worldcities.db" "$OUT"
-rm -rf "$TMP_DIR"
+trap 'rm -rf "$TMP_DIR"' EXIT
+npm pack geo2city --pack-destination "$TMP_DIR" --loglevel=error
+tar xzf "$TMP_DIR"/geo2city-*.tgz -C "$TMP_DIR"
+# unzip via python3 (already installed in the build stage; `unzip` may not be).
+python3 -m zipfile -e "$TMP_DIR/package/worldcities.db.zip" "$TMP_DIR"
+cp "$TMP_DIR/worldcities.db" "$OUT"
 
 # Bake a lat/lng index in ahead of time — the DB is opened read-only at
 # runtime (may live in a read-only container layer), so it can't be built lazily.
