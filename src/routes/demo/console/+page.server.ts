@@ -6,10 +6,31 @@ import { demoSeedEnabled, getDemoSite, seedDemoTraffic } from '$lib/server/demo'
 import { parseChartParam, parsePointsParam } from '$lib/timeseries';
 
 /** Public, ungated demo analytics — no login required. */
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, request }) => {
 	const site = await getDemoSite();
 	if (!site) redirect(303, '/');
-	if (demoSeedEnabled()) await seedDemoTraffic(site.id);
+
+	const isReroll = url.searchParams.has('reroll') || url.searchParams.has('reset');
+	const explicitSeed = url.searchParams.get('seed');
+	const parsedSeed = explicitSeed ? Number(explicitSeed) : undefined;
+	const validSeed = Number.isFinite(parsedSeed) ? parsedSeed : undefined;
+
+	const isClientNav = request.headers.has('x-sveltekit-invalidated');
+	const isFullVisit = !isClientNav || isReroll;
+
+	let activeSeed = validSeed;
+	if (demoSeedEnabled()) {
+		if (isFullVisit && !validSeed) {
+			const res = await seedDemoTraffic(site.id, { force: true });
+			activeSeed = res.seed;
+		} else if (validSeed) {
+			const res = await seedDemoTraffic(site.id, { force: false, seed: validSeed });
+			activeSeed = res.seed || validSeed;
+		} else {
+			const res = await seedDemoTraffic(site.id, { force: false });
+			activeSeed = res.seed;
+		}
+	}
 
 	const days = Number(url.searchParams.get('days') ?? 7);
 	const range = Number.isFinite(days) ? Math.min(Math.max(days, 1), 90) : 7;
@@ -24,6 +45,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		days: range,
 		points,
 		chart,
+		seed: activeSeed,
 		stats,
 		recentEvents,
 		aiAvailable: aiConfigured()

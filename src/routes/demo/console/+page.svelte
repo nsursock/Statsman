@@ -65,15 +65,24 @@
 	}
 
 	function switchDays(days: number) {
-		goto(`/demo/console?days=${days}&points=${data.points}&chart=${data.chart}`);
+		const seedPart = data.seed ? `&seed=${data.seed}` : '';
+		goto(`/demo/console?days=${days}&points=${data.points}&chart=${data.chart}${seedPart}`);
 	}
 
 	function switchPoints(points: number) {
-		goto(`/demo/console?days=${data.days}&points=${points}&chart=${data.chart}`);
+		const seedPart = data.seed ? `&seed=${data.seed}` : '';
+		goto(`/demo/console?days=${data.days}&points=${points}&chart=${data.chart}${seedPart}`);
 	}
 
 	function switchChart(chart: 'line' | 'bars') {
-		goto(`/demo/console?days=${data.days}&points=${data.points}&chart=${chart}`);
+		const seedPart = data.seed ? `&seed=${data.seed}` : '';
+		goto(`/demo/console?days=${data.days}&points=${data.points}&chart=${chart}${seedPart}`);
+	}
+
+	function randomizeSeed() {
+		goto(`/demo/console?reroll=1&days=${data.days}&points=${data.points}&chart=${data.chart}`, {
+			invalidateAll: true
+		});
 	}
 </script>
 
@@ -104,6 +113,23 @@
 		{/snippet}
 
 		<div class="space-y-4">
+			<div class="flex items-center justify-between gap-2 px-1 text-xs font-mono text-scifi-muted">
+				<div class="flex items-center gap-2 min-w-0">
+					<span class="inline-block w-2 h-2 rounded-full bg-scifi-primary animate-pulse shrink-0"></span>
+					<span class="truncate">
+						Realistic demo traffic · randomized for this visit{#if data.seed} <span class="text-scifi-muted/60">(seed: {data.seed.toString(16)})</span>{/if}
+					</span>
+				</div>
+				<button
+					type="button"
+					onclick={randomizeSeed}
+					class="btn btn-xs btn-ghost text-scifi-primary shrink-0 hover:bg-scifi-primary/10"
+					title="Regenerate with fresh random seed"
+				>
+					Randomize data
+				</button>
+			</div>
+
 			<MissionConsole
 				site={data.site}
 				stats={data.stats}

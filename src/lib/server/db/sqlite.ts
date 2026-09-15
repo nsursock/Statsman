@@ -467,6 +467,45 @@ export function createSqliteStore(): Store {
 			);
 		},
 
+		async insertEvents(events: EventInput[]) {
+			if (!events.length) return;
+			const stmt = db.prepare(
+				`INSERT INTO events (
+					site_id, name, path, referrer, title, lang, screen, browser, os, device,
+					country, city, lat, lng, duration_ms, props, visitor_hash, created_at
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			);
+			const insertMany = db.transaction((rows: EventInput[]) => {
+				for (const event of rows) {
+					stmt.run(
+						event.siteId,
+						event.name ?? 'pageview',
+						event.path,
+						event.referrer ?? null,
+						event.title ?? null,
+						event.lang ?? null,
+						event.screen ?? null,
+						event.browser ?? null,
+						event.os ?? null,
+						event.device ?? null,
+						event.country ?? null,
+						event.city ?? null,
+						event.lat ?? null,
+						event.lng ?? null,
+						event.durationMs ?? null,
+						event.props ?? null,
+						event.visitorHash,
+						event.createdAt ?? Date.now()
+					);
+				}
+			});
+			insertMany(events);
+		},
+
+		async clearSiteEvents(siteId: string) {
+			db.prepare('DELETE FROM events WHERE site_id = ?').run(siteId);
+		},
+
 		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
 			return buildStats(db, siteId, days, points);
 		},

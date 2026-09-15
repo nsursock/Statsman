@@ -484,6 +484,10 @@ export async function createPostgresStore(): Promise<Store> {
 				)}`;
 		},
 
+		async clearSiteEvents(siteId: string) {
+			await db`DELETE FROM events WHERE site_id = ${siteId}`;
+		},
+
 		async getStats(siteId, days = 7, points = DEFAULT_POINTS) {
 			return buildStats(db, siteId, days, points);
 		},

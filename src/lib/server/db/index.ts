@@ -74,6 +74,25 @@ export async function insertEvent(
 	return (await getStore()).insertEvent(event);
 }
 
+export async function insertEvents(
+	events: import('./types').EventInput[]
+) {
+	const store = await getStore();
+	if (store.insertEvents) {
+		return store.insertEvents(events);
+	}
+	for (const event of events) {
+		await store.insertEvent(event);
+	}
+}
+
+export async function clearSiteEvents(siteId: string) {
+	const store = await getStore();
+	if (store.clearSiteEvents) {
+		return store.clearSiteEvents(siteId);
+	}
+}
+
 export async function getStats(siteId: string, days = 7, points?: number) {
 	return (await getStore()).getStats(siteId, days, points);
 }
