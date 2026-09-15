@@ -17,6 +17,14 @@
 		views: number;
 	};
 
+	type GlobePin = {
+		city: string;
+		country: string;
+		lat: number;
+		lng: number;
+		views: number;
+	};
+
 	type Stats = {
 		pageviews: number;
 		visitors: number;
@@ -35,6 +43,7 @@
 		campaigns: RankStat[];
 		countries: RankStat[];
 		cities: GeoCity[];
+		globePins: GlobePin[];
 		customEvents: RankStat[];
 		timeseries: { date: string; pageviews: number; visitors: number }[];
 	};
@@ -387,7 +396,7 @@
 			</span>
 		</div>
 		<div class="p-3 sm:p-4">
-			<GeoGlobe cities={displayStats.cities} height={280} />
+			<GeoGlobe cities={displayStats.globePins ?? displayStats.cities} height={280} />
 			<p class="text-scifi-muted text-[0.6rem] tracking-[0.1em] uppercase text-center mt-2 mb-0">
 				Locations estimated from IP
 			</p>

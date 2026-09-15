@@ -1,4 +1,7 @@
+import { env } from '$env/dynamic/private';
+import Database from 'better-sqlite3';
 import type { GeoLookup } from './geo-types';
+import type { CityResponse } from 'maxmind';
 
 export type { GeoLookup } from './geo-types';
 
@@ -46,61 +49,179 @@ export function resolveClientIp(request: Request, fallback: string): string {
 	return fallback.replace(/^::ffff:/, '').trim();
 }
 
-/** Resolve country/city from IP. Never persist the IP — only these fields. */
-export function lookupGeo(ip: string | null | undefined): GeoLookup {
-	if (!ip) return { country: null, city: null, lat: null, lng: null };
-	const cleaned = ip.replace(/^::ffff:/, '').trim();
-	if (isNonPublicIp(cleaned)) {
-		return { country: null, city: null, lat: null, lng: null };
-	}
-	try {
-		// Lazy-load: geoip-lite data files are large; don't pay at process boot.
-		const geoip = require('geoip-lite') as typeof import('geoip-lite');
-		const hit = geoip.lookup(cleaned);
-		if (!hit) return { country: null, city: null, lat: null, lng: null };
-		const [lat, lng] = hit.ll ?? [];
-		return {
-			country: hit.country ? String(hit.country).slice(0, 2).toUpperCase() : null,
-			city: hit.city ? String(hit.city).slice(0, 80) : null,
-			lat: typeof lat === 'number' && Number.isFinite(lat) ? Math.round(lat * 1000) / 1000 : null,
-			lng: typeof lng === 'number' && Number.isFinite(lng) ? Math.round(lng * 1000) / 1000 : null
-		};
-	} catch {
-		return { country: null, city: null, lat: null, lng: null };
-	}
-}
-
 function parseCoord(val: string | null): number | null {
 	if (!val) return null;
 	const n = parseFloat(val);
 	return Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null;
 }
 
-function parseCityHeader(val: string | null): string | null {
-	if (!val) return null;
+/* --------------------- reverse geocoding (standard method) --------------------- */
+/**
+ * The city name is ALWAYS derived from the coordinates via a local reverse
+ * geocoder — not from cf-ipcity or the MMDB city field. This guarantees the
+ * pin's label matches its plotted location (the root cause of the
+ * "Hong Kong · Russia" bug was a city from one source mismatched with coords
+ * from another).
+ *
+ * Uses a bundled worldcities.db (simplemaps basic data, ~41k cities, 6MB)
+ * queried via better-sqlite3 (already a project dependency). Nearest-city
+ * lookup by bounding-box + squared-distance sort — sub-millisecond, no
+ * network. If the DB is absent (dev without the file), falls back to whatever
+ * city the source (CF/MMDB) provided.
+ */
+const CITIES_DB_PATH =
+	env.STATSMAN_CITIES_DB_PATH || env.CITIES_DB_PATH || './data/worldcities.db';
+
+let citiesDb: Database.Database | null | undefined;
+
+function getCitiesDb(): Database.Database | null {
+	if (citiesDb !== undefined) return citiesDb;
 	try {
-		val = decodeURIComponent(val);
+		// Opened read-only — the lat/lng index is baked in ahead of time by
+		// scripts/fetch-cities.sh (the file may be read-only in containers).
+		citiesDb = new Database(CITIES_DB_PATH, { readonly: true, fileMustExist: true });
 	} catch {
-		/* invalid url-encoding, keep raw */
+		/* DB file missing — reverse geocoder disabled, fall back to source city. */
+		citiesDb = null;
 	}
-	const trimmed = val.trim();
-	return trimmed ? trimmed.slice(0, 80) : null;
+	return citiesDb;
 }
 
-/** Prefer Cloudflare / proxy hints when geoip misses (still no raw IP stored). */
-export function geoFromHeaders(request: Request, ip: string): GeoLookup {
-	const fromIp = lookupGeo(ip);
+/** Nearest-city SQL — bounding box ±1°, sorted by squared Euclidean distance. */
+const NEAREST_CITY_SQL = `
+	SELECT cc.city, co.iso2
+	FROM worldcities w
+	JOIN worldcities_city cc ON w.city = cc.id
+	JOIN worldcities_country co ON w.country = co.id
+	WHERE w.latitude BETWEEN ? AND ?
+	  AND w.longitude BETWEEN ? AND ?
+	ORDER BY (w.latitude - ?) * (w.latitude - ?) + (w.longitude - ?) * (w.longitude - ?)
+	LIMIT 1`;
 
+/**
+ * Reverse-geocode coordinates to the nearest city name + country code.
+ * Returns null if the DB is unavailable or no city is within range.
+ */
+function reverseGeocode(lat: number, lng: number): { city: string; country: string } | null {
+	const db = getCitiesDb();
+	if (!db) return null;
+	// Search within ±1° (~111km). If nothing found, expand to ±5°.
+	for (const range of [1, 5, 30]) {
+		const row = db
+			.prepare(NEAREST_CITY_SQL)
+			.get(lat - range, lat + range, lng - range, lng + range, lat, lat, lng, lng) as
+			| { city: string; iso2: string }
+			| undefined;
+		if (row?.city) {
+			return { city: row.city.slice(0, 80), country: row.iso2.toUpperCase() };
+		}
+	}
+	return null;
+}
+
+/* ----------------------------- MMDB fallback ----------------------------- */
+/**
+ * Local GeoIP fallback for the small fraction of traffic that reaches the app
+ * directly (bypassing Cloudflare, so cf-ip* headers are absent). Uses DB-IP's
+ * free "City Lite" MMDB (CC BY 4.0, no license key, updated monthly) read via
+ * the `maxmind` package. Bake the DB into the image with scripts/fetch-geodb.sh
+ * (the Dockerfile does this at build time).
+ *
+ * Lazy-loaded: the ~60MB MMDB is only memory-mapped on the first fallback
+ * lookup. If the file is absent (dev without the DB), lookups return nulls —
+ * the dashboard simply shows fewer pins rather than wrong ones.
+ */
+const GEODB_PATH =
+	env.STATSMAN_GEODB_PATH || env.GEODB_PATH || './data/dbip-city-lite.mmdb';
+
+let readerPromise: Promise<import('maxmind').Reader<CityResponse> | null> | null = null;
+
+async function getReader(): Promise<import('maxmind').Reader<CityResponse> | null> {
+	if (readerPromise) return readerPromise;
+	readerPromise = (async () => {
+		try {
+			const maxmind = (await import('maxmind')).default;
+			return await maxmind.open<CityResponse>(GEODB_PATH, { cache: { max: 4096 } });
+		} catch {
+			/* DB file missing or unreadable — fallback disabled. */
+			return null;
+		}
+	})();
+	return readerPromise;
+}
+
+/** Resolve country + coordinates from a local MMDB. Never persist the IP. */
+async function lookupGeoMmdb(ip: string): Promise<GeoLookup> {
+	const cleaned = ip.replace(/^::ffff:/, '').trim();
+	if (!cleaned || isNonPublicIp(cleaned)) {
+		return { country: null, city: null, lat: null, lng: null };
+	}
+	const reader = await getReader();
+	if (!reader) return { country: null, city: null, lat: null, lng: null };
+	const hit = reader.get(cleaned) as CityResponse | null;
+	if (!hit) return { country: null, city: null, lat: null, lng: null };
+	const country = hit.country?.iso_code ? hit.country.iso_code.slice(0, 2).toUpperCase() : null;
+	const lat =
+		typeof hit.location?.latitude === 'number' && Number.isFinite(hit.location.latitude)
+			? Math.round(hit.location.latitude * 1000) / 1000
+			: null;
+	const lng =
+		typeof hit.location?.longitude === 'number' && Number.isFinite(hit.location.longitude)
+			? Math.round(hit.location.longitude * 1000) / 1000
+			: null;
+	// City from MMDB is used only as a fallback when the reverse geocoder DB
+	// is unavailable. When the reverse geocoder is present, it overrides this.
+	const mmdbCity = hit.city?.names?.en ? hit.city.names.en.slice(0, 80) : null;
+	return { country, city: mmdbCity, lat, lng };
+}
+
+/**
+ * Resolve geo for an incoming event.
+ *
+ * Flow:
+ *  1. Get coordinates + country from Cloudflare headers (prod is always behind
+ *     CF) or, when CF headers are absent (direct hits), from the local MMDB.
+ *  2. Derive the city name from the coordinates via the local reverse geocoder
+ *     (worldcities.db). This is the STANDARD method — the city always matches
+ *     the pin location, making a "Hong Kong · Russia" mismatch impossible.
+ *  3. If the reverse geocoder DB is unavailable (dev without the file), fall
+ *     back to whatever city the source (CF/MMDB) provided.
+ *
+ * Country comes from the same source as the coordinates. Never persist the
+ * raw IP — only these derived fields.
+ */
+export async function geoFromHeaders(request: Request, ip: string): Promise<GeoLookup> {
 	const cfCountry = request.headers.get('cf-ipcountry');
 	const validCfCountry =
 		cfCountry && cfCountry !== 'XX' && cfCountry !== 'T1'
 			? cfCountry.slice(0, 2).toUpperCase()
 			: null;
+	const cfLat = parseCoord(request.headers.get('cf-iplatitude'));
+	const cfLng = parseCoord(request.headers.get('cf-iplongitude'));
 
-	const country = fromIp.country ?? validCfCountry;
-	const city = fromIp.city ?? parseCityHeader(request.headers.get('cf-ipcity'));
-	const lat = fromIp.lat ?? parseCoord(request.headers.get('cf-iplatitude'));
-	const lng = fromIp.lng ?? parseCoord(request.headers.get('cf-iplongitude'));
+	// Cloudflare present with coordinates — use CF coords + country.
+	if (cfLat != null && cfLng != null) {
+		const rev = reverseGeocode(cfLat, cfLng);
+		return {
+			country: rev?.country ?? validCfCountry,
+			city: rev?.city ?? null,
+			lat: cfLat,
+			lng: cfLng
+		};
+	}
 
-	return { country, city, lat, lng };
+	// No CF coords — fall back to MMDB (direct hits bypassing Cloudflare).
+	const fromMmdb = ip ? await lookupGeoMmdb(ip) : { country: null, city: null, lat: null, lng: null };
+	if (fromMmdb.lat != null && fromMmdb.lng != null) {
+		const rev = reverseGeocode(fromMmdb.lat, fromMmdb.lng);
+		return {
+			country: rev?.country ?? fromMmdb.country ?? validCfCountry,
+			city: rev?.city ?? fromMmdb.city,
+			lat: fromMmdb.lat,
+			lng: fromMmdb.lng
+		};
+	}
+
+	// No coordinates from any source — no pin possible.
+	return { country: validCfCountry ?? fromMmdb.country, city: null, lat: null, lng: null };
 }

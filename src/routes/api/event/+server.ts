@@ -80,7 +80,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	}
 
 	const daySalt = new Date().toISOString().slice(0, 10);
-	const geo = geoFromHeaders(request, ip);
+	const geo = await geoFromHeaders(request, ip);
 
 	let referrer: string | null = body.referrer ? String(body.referrer) : null;
 	if (referrer) {

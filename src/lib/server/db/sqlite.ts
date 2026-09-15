@@ -285,6 +285,27 @@ function buildStats(
 		views: number;
 	}[];
 
+	// Granular globe pins — group by rounded coords (2dp ≈ 1km), not by city.
+	// Preserves actual visitor locations for zoom-in; city/country are labels.
+	const globePins = db
+		.prepare(
+			`SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS city,
+				COALESCE(NULLIF(country, ''), '?') AS country,
+				AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*) AS views
+			 FROM events
+			 WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
+				AND lat IS NOT NULL AND lng IS NOT NULL
+			 GROUP BY ROUND(lat, 2), ROUND(lng, 2)
+			 ORDER BY views DESC LIMIT 200`
+		)
+		.all(siteId, since, end) as {
+		city: string;
+		country: string;
+		lat: number;
+		lng: number;
+		views: number;
+	}[];
+
 	const customEvents = db
 		.prepare(
 			`SELECT name AS label, COUNT(*) AS views FROM events
@@ -353,6 +374,13 @@ function buildStats(
 			lat: Number(c.lat),
 			lng: Number(c.lng),
 			views: Number(c.views)
+		})),
+		globePins: globePins.map((p) => ({
+			city: p.city,
+			country: p.country,
+			lat: Number(p.lat),
+			lng: Number(p.lng),
+			views: Number(p.views)
 		})),
 		customEvents,
 		timeseries

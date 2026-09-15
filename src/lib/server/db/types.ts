@@ -78,6 +78,16 @@ export type GeoCityStat = {
 	views: number;
 };
 
+/** Granular globe pin — grouped by rounded coordinates, not by city.
+ *  Preserves actual visitor locations for zoom-in; city/country are labels. */
+export type GlobePin = {
+	city: string;
+	country: string;
+	lat: number;
+	lng: number;
+	views: number;
+};
+
 export type StatsSummary = {
 	pageviews: number;
 	visitors: number;
@@ -97,6 +107,8 @@ export type StatsSummary = {
 	campaigns: RankStat[];
 	countries: RankStat[];
 	cities: GeoCityStat[];
+	/** Granular pins for the 3D globe — grouped by rounded coords, not by city. */
+	globePins: GlobePin[];
 	/** Ranked event names excluding pageview/engagement (auto + custom). */
 	customEvents: RankStat[];
 	timeseries: { date: string; pageviews: number; visitors: number }[];

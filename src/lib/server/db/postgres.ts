@@ -190,6 +190,7 @@ async function buildStats(
 		screens,
 		countries,
 		cities,
+		globePins,
 		customEvents,
 		durationRows,
 		rawSeries
@@ -241,6 +242,15 @@ async function buildStats(
 			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 				AND lat IS NOT NULL AND lng IS NOT NULL
 			GROUP BY city, country ORDER BY views DESC LIMIT 40`,
+		db`
+			SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS city,
+				COALESCE(NULLIF(country, ''), '?') AS country,
+				AVG(lat) AS lat, AVG(lng) AS lng, COUNT(*)::int AS views
+			FROM events
+			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
+				AND lat IS NOT NULL AND lng IS NOT NULL
+			GROUP BY ROUND(lat, 2), ROUND(lng, 2)
+			ORDER BY views DESC LIMIT 200`,
 		db`
 			SELECT name AS label, COUNT(*)::int AS views FROM events
 			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end}
@@ -329,6 +339,13 @@ async function buildStats(
 		campaigns,
 		countries: countries.map((r) => ({ label: r.label as string, views: Number(r.views) })),
 		cities: cities.map((r) => ({
+			city: r.city as string,
+			country: r.country as string,
+			lat: Number(r.lat),
+			lng: Number(r.lng),
+			views: Number(r.views)
+		})),
+		globePins: globePins.map((r) => ({
 			city: r.city as string,
 			country: r.country as string,
 			lat: Number(r.lat),
