@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
 	import StatCard from '$lib/components/StatCard.svelte';
-	import Sparkline from '$lib/components/Sparkline.svelte';
+	import Sparkline, { type BarRange } from '$lib/components/Sparkline.svelte';
 	import GeoGlobe from '$lib/components/GeoGlobe.svelte';
 	import { countryName } from '$lib/country-name';
 	import { relTime } from '$lib/rel-time';
@@ -62,7 +64,8 @@
 		kicker = '// Mission control',
 		emptyStream = 'No events yet — the stream is listening.',
 		onPointsChange,
-		onChartChange
+		onChartChange,
+		onLiveChange
 	}: {
 		site: { id: string; name: string; domain: string };
 		stats: Stats;
@@ -75,21 +78,88 @@
 		emptyStream?: string;
 		onPointsChange?: (points: number) => void;
 		onChartChange?: (chart: ChartType) => void;
+		onLiveChange?: (live: boolean) => void;
 	} = $props();
 
-	const maxPageViews = $derived(Math.max(1, ...stats.topPages.map((r) => r.views), 1));
-	const maxRefViews = $derived(Math.max(1, ...stats.topReferrers.map((r) => r.views), 1));
-	const maxBrowserViews = $derived(Math.max(1, ...stats.browsers.map((r) => r.views), 1));
-	const maxOsViews = $derived(Math.max(1, ...stats.operatingSystems.map((r) => r.views), 1));
-	const maxDeviceViews = $derived(Math.max(1, ...stats.devices.map((r) => r.views), 1));
-	const maxLangViews = $derived(Math.max(1, ...stats.languages.map((r) => r.views), 1));
-	const maxScreenViews = $derived(Math.max(1, ...stats.screens.map((r) => r.views), 1));
-	const maxSourceViews = $derived(Math.max(1, ...stats.utmSources.map((r) => r.views), 1));
-	const maxMediumViews = $derived(Math.max(1, ...stats.utmMediums.map((r) => r.views), 1));
-	const maxCampaignViews = $derived(Math.max(1, ...stats.campaigns.map((r) => r.views), 1));
-	const maxCountryViews = $derived(Math.max(1, ...stats.countries.map((r) => r.views), 1));
-	const maxEventViews = $derived(Math.max(1, ...stats.customEvents.map((r) => r.views), 1));
-	const maxCityViews = $derived(Math.max(1, stats.cities[0]?.views ?? 1));
+	// Drill-down: click a bar to filter the deck to that bucket's time window.
+	let drillStats = $state<Stats | null>(null);
+	let drillLabel = $state('');
+	let drillLoading = $state(false);
+	let selectedBar = $state(-1);
+	const displayStats = $derived(drillStats ?? stats);
+
+	// Reset drill-down whenever the underlying stats change (range/points/live refresh).
+	$effect(() => {
+		stats;
+		drillStats = null;
+		drillLabel = '';
+		selectedBar = -1;
+	});
+
+	async function onBarClick(range: BarRange) {
+		if (!browser) return;
+		// Toggle off if the same bar is clicked again.
+		if (selectedBar === range.index && drillStats) {
+			clearDrill();
+			return;
+		}
+		selectedBar = range.index;
+		drillLoading = true;
+		drillLabel = formatRangeLabel(range.start, range.end);
+		// Clicking a bar pauses live refresh so the drilled snapshot stays stable.
+		// If already paused, leave it alone.
+		if (live) onLiveChange?.(false);
+		try {
+			const res = await fetch(
+				`/api/stats/range?siteId=${encodeURIComponent(site.id)}&startMs=${range.start}&endMs=${range.end}&points=${points}`
+			);
+			const payload = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(payload.message || 'Failed to load range');
+			drillStats = payload.stats as Stats;
+		} catch {
+			drillStats = null;
+			selectedBar = -1;
+			drillLabel = '';
+		} finally {
+			drillLoading = false;
+		}
+	}
+
+	function clearDrill() {
+		drillStats = null;
+		drillLabel = '';
+		selectedBar = -1;
+		// Return to normal timeframe: fetch fresh full-range stats.
+		// Live mode is left untouched — bar interaction never resumes it.
+		if (browser) void invalidateAll();
+	}
+
+	function formatRangeLabel(start: number, end: number): string {
+		const s = new Date(start);
+		const e = new Date(end);
+		const day = 24 * 60 * 60 * 1000;
+		if (end - start <= 2 * 60 * 60 * 1000) {
+			return `${s.toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12: false })} – ${e.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+		}
+		if (end - start <= day) {
+			return `${s.toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12: false })} – ${e.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+		}
+		return `${s.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${e.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+	}
+
+	const maxPageViews = $derived(Math.max(1, ...displayStats.topPages.map((r) => r.views), 1));
+	const maxRefViews = $derived(Math.max(1, ...displayStats.topReferrers.map((r) => r.views), 1));
+	const maxBrowserViews = $derived(Math.max(1, ...displayStats.browsers.map((r) => r.views), 1));
+	const maxOsViews = $derived(Math.max(1, ...displayStats.operatingSystems.map((r) => r.views), 1));
+	const maxDeviceViews = $derived(Math.max(1, ...displayStats.devices.map((r) => r.views), 1));
+	const maxLangViews = $derived(Math.max(1, ...displayStats.languages.map((r) => r.views), 1));
+	const maxScreenViews = $derived(Math.max(1, ...displayStats.screens.map((r) => r.views), 1));
+	const maxSourceViews = $derived(Math.max(1, ...displayStats.utmSources.map((r) => r.views), 1));
+	const maxMediumViews = $derived(Math.max(1, ...displayStats.utmMediums.map((r) => r.views), 1));
+	const maxCampaignViews = $derived(Math.max(1, ...displayStats.campaigns.map((r) => r.views), 1));
+	const maxCountryViews = $derived(Math.max(1, ...displayStats.countries.map((r) => r.views), 1));
+	const maxEventViews = $derived(Math.max(1, ...displayStats.customEvents.map((r) => r.views), 1));
+	const maxCityViews = $derived(Math.max(1, displayStats.cities[0]?.views ?? 1));
 
 	function streamLabel(e: EventRow): string {
 		if (e.name && e.name !== 'pageview') return e.name;
@@ -124,7 +194,11 @@
 	<div class="p-4 sm:p-5">
 		<p class="text-xs text-scifi-cyan mb-1 min-h-4 m-0">
 			$ {kicker.replace(/^\/\/\s*/, '')} — {site.domain}
-			<span class="text-scifi-success"> ✓ last {days}d</span>
+			{#if drillStats || drillLoading}
+				<span class="text-scifi-primary"> ▸ {drillLabel || 'loading…'}</span>
+			{:else}
+				<span class="text-scifi-success"> ✓ last {days}d</span>
+			{/if}
 		</p>
 		<h1
 			class="hero-title text-2xl sm:text-3xl font-extrabold tracking-tight leading-none m-0 mb-4"
@@ -132,12 +206,27 @@
 			{site.name.toUpperCase()}
 		</h1>
 
+		{#if drillStats || drillLoading}
+			<div class="drill-banner">
+				<span class="badge badge-primary">{drillLoading ? 'loading…' : 'drill-down'}</span>
+				<span class="text-sm text-scifi-muted ml-2 truncate">{drillLabel}</span>
+				<button
+					type="button"
+					class="btn btn-xs btn-ghost ml-auto"
+					onclick={clearDrill}
+					disabled={drillLoading}
+				>
+					Clear ✕
+				</button>
+			</div>
+		{/if}
+
 		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
-			<StatCard label="Pageviews" value={stats.pageviews} />
-			<StatCard label="Visitors" value={stats.visitors} />
-			<StatCard label="Bounce rate" value={stats.bounceRate} suffix="%" />
-			<StatCard label="Pages / visit" value={stats.avgPagesPerVisit} />
-			<StatCard label="Avg duration" value={formatDuration(stats.avgVisitDurationSec ?? 0)} />
+			<StatCard label="Pageviews" value={displayStats.pageviews} />
+			<StatCard label="Visitors" value={displayStats.visitors} />
+			<StatCard label="Bounce rate" value={displayStats.bounceRate} suffix="%" />
+			<StatCard label="Pages / visit" value={displayStats.avgPagesPerVisit} />
+			<StatCard label="Avg duration" value={formatDuration(displayStats.avgVisitDurationSec ?? 0)} />
 		</div>
 
 		<div class="glass rounded-lg p-2 mb-1 relative">
@@ -195,7 +284,13 @@
 					</span>
 				</div>
 			</div>
-			<Sparkline data={stats.timeseries} variant={chart} />
+			<Sparkline
+				data={stats.timeseries}
+				variant={chart}
+				showYAxis
+				{onBarClick}
+				{selectedBar}
+			/>
 		</div>
 	</div>
 </section>
@@ -235,7 +330,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Top pages</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.topPages.slice(0, 8) as row, i}
+			{#each displayStats.topPages.slice(0, 8) as row, i}
 				<div class="rank-row">
 					<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 					<div class="rank-main min-w-0">
@@ -258,18 +353,18 @@
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Earth</span>
 			<span class="text-scifi-muted text-[0.62rem] tracking-[0.12em] uppercase">
-				{stats.cities.length} cities · {stats.countries.length} countries
+				{displayStats.cities.length} cities · {displayStats.countries.length} countries
 			</span>
 		</div>
 		<div class="p-3 sm:p-4">
-			<GeoGlobe cities={stats.cities} height={280} />
+			<GeoGlobe cities={displayStats.cities} height={280} />
 			<p class="text-scifi-muted text-[0.6rem] tracking-[0.1em] uppercase text-center mt-2 mb-0">
 				Locations estimated from IP
 			</p>
 			<div class="geo-split mt-3">
 				<div>
 					<p class="label-kicker m-0 mb-2">Countries</p>
-					{#each stats.countries.slice(0, 6) as row, i}
+					{#each displayStats.countries.slice(0, 6) as row, i}
 						<div class="rank-row">
 							<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 							<div class="rank-main min-w-0">
@@ -293,7 +388,7 @@
 				</div>
 				<div>
 					<p class="label-kicker m-0 mb-2">Cities</p>
-					{#each stats.cities.slice(0, 6) as row, i}
+					{#each displayStats.cities.slice(0, 6) as row, i}
 						<div class="rank-row">
 							<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 							<div class="rank-main min-w-0">
@@ -324,7 +419,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Referrers</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.topReferrers.slice(0, 8) as row, i}
+			{#each displayStats.topReferrers.slice(0, 8) as row, i}
 				<div class="rank-row">
 					<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 					<div class="rank-main min-w-0">
@@ -353,7 +448,7 @@
 		<div class="rank-body space-y-4">
 			<div>
 				<p class="label-kicker m-0 mb-2">Sources</p>
-				{#each stats.utmSources.slice(0, 5) as row}
+				{#each displayStats.utmSources.slice(0, 5) as row}
 					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
@@ -372,7 +467,7 @@
 			</div>
 			<div>
 				<p class="label-kicker m-0 mb-2">Mediums</p>
-				{#each stats.utmMediums.slice(0, 5) as row}
+				{#each displayStats.utmMediums.slice(0, 5) as row}
 					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
@@ -391,7 +486,7 @@
 			</div>
 			<div>
 				<p class="label-kicker m-0 mb-2">Campaigns</p>
-				{#each stats.campaigns.slice(0, 5) as row}
+				{#each displayStats.campaigns.slice(0, 5) as row}
 					<div class="mb-2">
 						<div class="flex justify-between gap-2 text-xs mb-1">
 							<span class="truncate">{row.label}</span>
@@ -413,7 +508,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Browsers</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.browsers.slice(0, 5) as row}
+			{#each displayStats.browsers.slice(0, 5) as row}
 				<div>
 					<div class="flex justify-between gap-2 text-xs mb-1">
 						<span class="truncate">{row.browser}</span>
@@ -434,7 +529,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> OS</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.operatingSystems.slice(0, 5) as row}
+			{#each displayStats.operatingSystems.slice(0, 5) as row}
 				<div>
 					<div class="flex justify-between gap-2 text-xs mb-1">
 						<span class="truncate">{row.os}</span>
@@ -458,7 +553,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Devices</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.devices.slice(0, 5) as row}
+			{#each displayStats.devices.slice(0, 5) as row}
 				<div>
 					<div class="flex justify-between gap-2 text-xs mb-1">
 						<span class="truncate">{row.device}</span>
@@ -482,7 +577,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Languages</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.languages.slice(0, 5) as row}
+			{#each displayStats.languages.slice(0, 5) as row}
 				<div>
 					<div class="flex justify-between gap-2 text-xs mb-1">
 						<span class="truncate">{row.label}</span>
@@ -503,7 +598,7 @@
 			<span class="pane-title"><span class="pane-title-bar"></span> Screens</span>
 		</div>
 		<div class="rank-body">
-			{#each stats.screens.slice(0, 5) as row}
+			{#each displayStats.screens.slice(0, 5) as row}
 				<div>
 					<div class="flex justify-between gap-2 text-xs mb-1">
 						<span class="truncate">{row.label}</span>
@@ -530,7 +625,7 @@
 			<p class="text-scifi-muted text-[0.65rem] m-0 mb-2 tracking-wide">
 				Auto + <code class="text-scifi-cyan">statsman.track('name')</code>
 			</p>
-			{#each stats.customEvents.slice(0, 8) as row, i}
+			{#each displayStats.customEvents.slice(0, 8) as row, i}
 				<div class="rank-row">
 					<span class="rank-idx">{String(i + 1).padStart(2, '0')}</span>
 					<div class="rank-main min-w-0">
@@ -553,6 +648,18 @@
 </div>
 
 <style>
+	.drill-banner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 0.85rem;
+		margin-bottom: 0.85rem;
+		border-radius: 10px;
+		border: 1px solid rgba(var(--scifi-primary-rgb), 0.4);
+		background: rgba(var(--scifi-primary-rgb), 0.08);
+	}
+
 	.masonry {
 		columns: 1;
 		column-gap: 1rem;

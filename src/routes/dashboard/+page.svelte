@@ -402,6 +402,7 @@
 					{live}
 					onPointsChange={switchPoints}
 					onChartChange={switchChart}
+					onLiveChange={(v) => (live = v)}
 				/>
 			<AiAnalyst
 				siteId={data.site.id}

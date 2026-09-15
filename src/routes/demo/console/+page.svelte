@@ -116,6 +116,7 @@
 				emptyStream="No events yet — open the fake blog and click around."
 				onPointsChange={switchPoints}
 				onChartChange={switchChart}
+			onLiveChange={(v) => (live = v)}
 			/>
 
 			<AiAnalyst
