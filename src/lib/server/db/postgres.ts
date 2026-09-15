@@ -460,28 +460,35 @@ export async function createPostgresStore(): Promise<Store> {
 				visitor_hash: event.visitorHash,
 				created_at: event.createdAt ?? Date.now()
 			}));
-			await db`
-				INSERT INTO events ${db(
-					rows,
-					'site_id',
-					'name',
-					'path',
-					'referrer',
-					'title',
-					'lang',
-					'screen',
-					'browser',
-					'os',
-					'device',
-					'country',
-					'city',
-					'lat',
-					'lng',
-					'duration_ms',
-					'props',
-					'visitor_hash',
-					'created_at'
-				)}`;
+			// Postgres limits 65535 bound parameters per query; 18 cols per row
+			// → max ~3600 rows. Chunk to stay safely under the limit.
+			const COLS = 18;
+			const CHUNK = Math.floor(65535 / COLS / 4) * 4; // ~3640, aligned
+			for (let i = 0; i < rows.length; i += CHUNK) {
+				const batch = rows.slice(i, i + CHUNK);
+				await db`
+					INSERT INTO events ${db(
+						batch,
+						'site_id',
+						'name',
+						'path',
+						'referrer',
+						'title',
+						'lang',
+						'screen',
+						'browser',
+						'os',
+						'device',
+						'country',
+						'city',
+						'lat',
+						'lng',
+						'duration_ms',
+						'props',
+						'visitor_hash',
+						'created_at'
+					)}`;
+			}
 		},
 
 		async clearSiteEvents(siteId: string) {
