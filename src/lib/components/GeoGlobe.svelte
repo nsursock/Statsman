@@ -31,6 +31,16 @@
 	const EARTH_TOPOLOGY =
 		'https://cdn.jsdelivr.net/npm/three-globe@2.31.1/example/img/earth-topology.png';
 
+	// Hoisted THREE refs so markers can be rebuilt when `cities` changes (drill-down).
+	// Populated in onMount; the `$effect` below rebuilds pins whenever `cities` updates.
+	const globeR = 1.28;
+	let markersGroup: THREE.Group | null = null;
+	let hitSpheres: { mesh: THREE.Mesh; label: string }[] = [];
+	let markerMats: THREE.MeshBasicMaterial[] = [];
+	let primary = new THREE.Color('#ff2a6d');
+	let cyan = new THREE.Color('#2ee6ff');
+	let ready = $state(false);
+
 	function latLngToVec(lat: number, lng: number, r: number) {
 		const phi = ((90 - lat) * Math.PI) / 180;
 		const theta = ((lng + 180) * Math.PI) / 180;
@@ -49,6 +59,78 @@
 			return new THREE.Color(fallback);
 		}
 	}
+
+	/** (Re)build the city pins. Called initially after the scene is ready and again
+	 *  whenever the `cities` prop changes (e.g. dashboard drill-down). */
+	function buildMarkers(list: City[]) {
+		if (!markersGroup) return;
+		// Tear down previous markers (dispose GPU resources to avoid leaks on rebuild).
+		for (const m of markerMats) m.dispose();
+		markerMats = [];
+		hitSpheres = [];
+		for (const child of [...markersGroup.children]) {
+			markersGroup.remove(child);
+			(child as THREE.Mesh).geometry?.dispose();
+		}
+
+		const placed = list.filter(
+			(c) => Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90
+		);
+		const maxViews = Math.max(1, ...placed.map((c) => c.views));
+
+		for (const c of placed) {
+			const pos = latLngToVec(c.lat, c.lng, globeR * 1.012);
+			const t = Math.sqrt(c.views / maxViews);
+			const size = 0.02 + t * 0.05;
+
+			const coreMat = new THREE.MeshBasicMaterial({ color: primary });
+			const core = new THREE.Mesh(new THREE.SphereGeometry(size, 14, 14), coreMat);
+			core.position.copy(pos);
+			markersGroup.add(core);
+			markerMats.push(coreMat);
+
+			const haloMat = new THREE.MeshBasicMaterial({
+				color: cyan,
+				transparent: true,
+				opacity: 0.3
+			});
+			const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 2.3, 12, 12), haloMat);
+			halo.position.copy(pos);
+			markersGroup.add(halo);
+			markerMats.push(haloMat);
+
+			const spikeH = 0.08 + t * 0.28;
+			const spikeMat = new THREE.MeshBasicMaterial({
+				color: cyan,
+				transparent: true,
+				opacity: 0.92
+			});
+			const spike = new THREE.Mesh(
+				new THREE.CylinderGeometry(0.0045, 0.0045, spikeH, 6),
+				spikeMat
+			);
+			spike.position.copy(pos.clone().normalize().multiplyScalar(globeR + spikeH / 2 + 0.008));
+			spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
+			markersGroup.add(spike);
+			markerMats.push(spikeMat);
+
+			const coords = `${c.lat.toFixed(2)}°, ${c.lng.toFixed(2)}°`;
+			hitSpheres.push({
+				mesh: core,
+				label: `${c.city} · ${countryName(c.country)} · ${coords} · ${c.views.toLocaleString()}`
+			});
+		}
+
+		if (placed.length === 0) {
+			status = 'No lat/lng pins yet';
+		}
+	}
+
+	// Rebuild pins whenever the cities change (initial build + drill-down updates).
+	$effect(() => {
+		if (!ready || !markersGroup) return;
+		buildMarkers(cities);
+	});
 
 	onMount(() => {
 		reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -109,9 +191,8 @@
 		rim.position.set(0, -2.5, -4);
 		scene.add(rim);
 
-		const globeR = 1.28;
-		let primary = cssColor('--scifi-primary', '#ff2a6d');
-		let cyan = cssColor('--scifi-cyan', '#2ee6ff');
+		primary = cssColor('--scifi-primary', '#ff2a6d');
+		cyan = cssColor('--scifi-cyan', '#2ee6ff');
 
 		const sphereGeo = new THREE.SphereGeometry(globeR, 72, 72);
 		const globeMat = new THREE.MeshStandardMaterial({
@@ -177,62 +258,8 @@
 			}
 		})();
 
-		const markers = new THREE.Group();
-		root.add(markers);
-
-		const placed = cities.filter(
-			(c) => Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90
-		);
-		const maxViews = Math.max(1, ...placed.map((c) => c.views));
-		const hitSpheres: { mesh: THREE.Mesh; label: string }[] = [];
-		const markerMats: THREE.MeshBasicMaterial[] = [];
-
-		for (const c of placed) {
-			const pos = latLngToVec(c.lat, c.lng, globeR * 1.012);
-			const t = Math.sqrt(c.views / maxViews);
-			const size = 0.02 + t * 0.05;
-
-			const coreMat = new THREE.MeshBasicMaterial({ color: primary });
-			const core = new THREE.Mesh(new THREE.SphereGeometry(size, 14, 14), coreMat);
-			core.position.copy(pos);
-			markers.add(core);
-			markerMats.push(coreMat);
-
-			const haloMat = new THREE.MeshBasicMaterial({
-				color: cyan,
-				transparent: true,
-				opacity: 0.3
-			});
-			const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 2.3, 12, 12), haloMat);
-			halo.position.copy(pos);
-			markers.add(halo);
-			markerMats.push(haloMat);
-
-			const spikeH = 0.08 + t * 0.28;
-			const spikeMat = new THREE.MeshBasicMaterial({
-				color: cyan,
-				transparent: true,
-				opacity: 0.92
-			});
-			const spike = new THREE.Mesh(
-				new THREE.CylinderGeometry(0.0045, 0.0045, spikeH, 6),
-				spikeMat
-			);
-			spike.position.copy(pos.clone().normalize().multiplyScalar(globeR + spikeH / 2 + 0.008));
-			spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
-			markers.add(spike);
-			markerMats.push(spikeMat);
-
-			const coords = `${c.lat.toFixed(2)}°, ${c.lng.toFixed(2)}°`;
-			hitSpheres.push({
-				mesh: core,
-				label: `${c.city} · ${countryName(c.country)} · ${coords} · ${c.views.toLocaleString()}`
-			});
-		}
-
-		if (placed.length === 0) {
-			status = 'No lat/lng pins yet';
-		}
+		markersGroup = new THREE.Group();
+		root.add(markersGroup);
 
 		const applyTheme = () => {
 			primary = cssColor('--scifi-primary', '#ff2a6d');
@@ -282,6 +309,10 @@
 		};
 		raf = requestAnimationFrame(tick);
 
+		// Scene is ready — flip the flag so the `$effect` builds the initial pins
+		// and rebuilds them whenever `cities` changes (drill-down).
+		ready = true;
+
 		return () => {
 			cancelAnimationFrame(raf);
 			if (resumeTimer) clearTimeout(resumeTimer);
@@ -289,6 +320,9 @@
 			window.removeEventListener('resize', resize);
 			document.documentElement.removeEventListener('statsman:theme', applyTheme);
 			el.removeEventListener('pointermove', onMove);
+			for (const m of markerMats) m.dispose();
+			markersGroup = null;
+			ready = false;
 			dayTex?.dispose();
 			bumpTex?.dispose();
 			sphereGeo.dispose();

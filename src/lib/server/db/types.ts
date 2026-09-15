@@ -128,6 +128,8 @@ export type Store = {
 	/** Stats for an explicit [startMs, endMs) window — used by the AI Analyst for period comparison. */
 	getStatsRange(siteId: string, startMs: number, endMs: number, points?: number): Promise<StatsSummary>;
 	getRecentEvents(siteId: string, limit?: number): Promise<RecentEvent[]>;
+	/** Most-recent events within an explicit [startMs, endMs) window — used by drill-down. */
+	getEventsInRange(siteId: string, startMs: number, endMs: number, limit?: number): Promise<RecentEvent[]>;
 	siteHasEvents(siteId: string): Promise<boolean>;
 
 	getUserById(id: string): Promise<User | undefined>;

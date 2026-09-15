@@ -527,6 +527,30 @@ export async function createPostgresStore(): Promise<Store> {
 			);
 		},
 
+		async getEventsInRange(siteId, startMs, endMs, limit = 14) {
+			const rows = await db`
+				SELECT id, name, path, referrer, title, browser, os, device, country, city, created_at
+				FROM events
+				WHERE site_id = ${siteId} AND name != 'engagement'
+					AND created_at >= ${startMs} AND created_at < ${endMs}
+				ORDER BY created_at DESC LIMIT ${limit}`;
+			return rows.map(
+				(r): RecentEvent => ({
+					id: Number(r.id),
+					name: (r.name as string) ?? 'pageview',
+					path: r.path as string,
+					referrer: r.referrer as string | null,
+					title: (r.title as string | null) ?? null,
+					browser: r.browser as string | null,
+					os: (r.os as string | null) ?? null,
+					device: r.device as string | null,
+					country: (r.country as string | null) ?? null,
+					city: (r.city as string | null) ?? null,
+					created_at: Number(r.created_at)
+				})
+			);
+		},
+
 		async siteHasEvents(siteId) {
 			const [row] = await db`SELECT 1 AS ok FROM events WHERE site_id = ${siteId} LIMIT 1`;
 			return Boolean(row);

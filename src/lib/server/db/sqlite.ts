@@ -526,6 +526,17 @@ export function createSqliteStore(): Store {
 				.all(siteId, limit) as RecentEvent[];
 		},
 
+		async getEventsInRange(siteId, startMs, endMs, limit = 14) {
+			return db
+				.prepare(
+					`SELECT id, name, path, referrer, title, browser, os, device, country, city, created_at
+					 FROM events
+					 WHERE site_id = ? AND name != 'engagement' AND created_at >= ? AND created_at < ?
+					 ORDER BY created_at DESC LIMIT ?`
+				)
+				.all(siteId, startMs, endMs, limit) as RecentEvent[];
+		},
+
 		async siteHasEvents(siteId) {
 			const row = db
 				.prepare('SELECT 1 AS ok FROM events WHERE site_id = ? LIMIT 1')

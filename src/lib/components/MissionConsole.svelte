@@ -83,15 +83,18 @@
 
 	// Drill-down: click a bar to filter the deck to that bucket's time window.
 	let drillStats = $state<Stats | null>(null);
+	let drillEvents = $state<EventRow[] | null>(null);
 	let drillLabel = $state('');
 	let drillLoading = $state(false);
 	let selectedBar = $state(-1);
 	const displayStats = $derived(drillStats ?? stats);
+	const displayEvents = $derived(drillEvents ?? recentEvents);
 
 	// Reset drill-down whenever the underlying stats change (range/points/live refresh).
 	$effect(() => {
 		stats;
 		drillStats = null;
+		drillEvents = null;
 		drillLabel = '';
 		selectedBar = -1;
 	});
@@ -116,8 +119,10 @@
 			const payload = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(payload.message || 'Failed to load range');
 			drillStats = payload.stats as Stats;
+			drillEvents = (payload.recentEvents as EventRow[]) ?? [];
 		} catch {
 			drillStats = null;
+			drillEvents = null;
 			selectedBar = -1;
 			drillLabel = '';
 		} finally {
@@ -127,6 +132,7 @@
 
 	function clearDrill() {
 		drillStats = null;
+		drillEvents = null;
 		drillLabel = '';
 		selectedBar = -1;
 		// Return to normal timeframe: fetch fresh full-range stats.
@@ -336,7 +342,7 @@
 		</div>
 		<div class="p-4 sm:p-5">
 			<ul class="space-y-1.5 text-xs m-0 p-0 list-none">
-				{#each recentEvents.slice(0, 12) as e (e.id)}
+				{#each displayEvents.slice(0, 12) as e (e.id)}
 					<li class="feed-row grid grid-cols-[4.5rem_1fr_auto] gap-2 items-baseline">
 						<span class="text-scifi-muted tabular-nums">{relTime(e.created_at)}</span>
 						<span class="truncate" title={e.path}>{streamLabel(e)}</span>

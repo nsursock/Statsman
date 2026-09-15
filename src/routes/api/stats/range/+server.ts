@@ -1,12 +1,12 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getSite, getStatsRange } from '$lib/server/db';
+import { getSite, getStatsRange, getEventsInRange } from '$lib/server/db';
 import { isCloud } from '$lib/server/config';
 import { demoEnabled, getDemoSite } from '$lib/server/demo';
 
 /**
  * Stats for an explicit [startMs, endMs) window — used by the dashboard
- * drill-down (click a bar to see only that bucket's stats).
+ * drill-down (click a bar to see only that bucket's stats + event stream).
  */
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const siteId = url.searchParams.get('siteId');
@@ -33,7 +33,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		}
 	}
 
-	return json({
-		stats: await getStatsRange(site.id, startMs, endMs, points)
-	});
+	const [stats, recentEvents] = await Promise.all([
+		getStatsRange(site.id, startMs, endMs, points),
+		getEventsInRange(site.id, startMs, endMs, 14)
+	]);
+
+	return json({ stats, recentEvents });
 };
