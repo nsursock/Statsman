@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getSite, getStatsRange } from '$lib/server/db';
 import { isCloud } from '$lib/server/config';
+import { demoEnabled, getDemoSite } from '$lib/server/demo';
 
 /**
  * Stats for an explicit [startMs, endMs) window — used by the dashboard
@@ -19,11 +20,17 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		error(400, 'Invalid range');
 	}
 
-	if (isCloud()) {
-		if (!locals.user) error(401, 'Login required');
-		if (!site.user_id || site.user_id !== locals.user.id) error(403, 'Forbidden');
-	} else if (!locals.adminOk) {
-		error(401, 'Admin required');
+	// The demo site is public — allow ungated reads when demo is enabled.
+	const demo = demoEnabled() ? await getDemoSite() : undefined;
+	const isDemo = demo?.id === site.id;
+
+	if (!isDemo) {
+		if (isCloud()) {
+			if (!locals.user) error(401, 'Login required');
+			if (!site.user_id || site.user_id !== locals.user.id) error(403, 'Forbidden');
+		} else if (!locals.adminOk) {
+			error(401, 'Admin required');
+		}
 	}
 
 	return json({

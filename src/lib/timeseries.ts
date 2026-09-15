@@ -50,16 +50,16 @@ export function parseChartParam(raw: string | null | undefined): ChartType {
 	return DEFAULT_CHART;
 }
 
-/** Choose the nice interval whose resulting sample count is closest to `targetPoints`. */
-export function bucketMsForTarget(days: number, targetPoints = DEFAULT_POINTS): number {
-	const rangeMs = Math.max(days, 1) * DAY;
+/** Choose the nice interval whose resulting sample count for a given range in ms is closest to `targetPoints`. */
+export function bucketMsForSpan(spanMs: number, targetPoints = DEFAULT_POINTS): number {
+	const rangeMs = Math.max(spanMs, 60_000);
 	const target = clampPoints(targetPoints);
 	let best = NICE_INTERVALS[NICE_INTERVALS.length - 1];
 	let bestScore = Infinity;
 
 	for (const iv of NICE_INTERVALS) {
 		const n = Math.floor(rangeMs / iv) + 1;
-		if (n < 8 || n > MAX_POINTS + 40) continue;
+		if (n < 4 || n > MAX_POINTS + 40) continue;
 		const score = Math.abs(n - target);
 		// Prefer denser when tied (smoother curve).
 		if (score < bestScore || (score === bestScore && iv < best)) {
@@ -68,6 +68,11 @@ export function bucketMsForTarget(days: number, targetPoints = DEFAULT_POINTS): 
 		}
 	}
 	return best;
+}
+
+/** Choose the nice interval whose resulting sample count is closest to `targetPoints`. */
+export function bucketMsForTarget(days: number, targetPoints = DEFAULT_POINTS): number {
+	return bucketMsForSpan(Math.max(days, 1) * DAY, targetPoints);
 }
 
 /** @deprecated Prefer bucketMsForTarget — kept for call-site clarity. */
@@ -84,6 +89,37 @@ export type RawBucket = {
 	pageviews: number | string;
 	visitors: number | string;
 };
+
+export function fillTimeseriesRange(
+	sinceMs: number,
+	endMs: number,
+	raw: RawBucket[],
+	targetPoints = DEFAULT_POINTS
+): { date: string; pageviews: number; visitors: number }[] {
+	const spanMs = Math.max(endMs - sinceMs, 60_000);
+	const bucketMs = bucketMsForSpan(spanMs, targetPoints);
+	const start = alignFloor(sinceMs, bucketMs);
+	const end = alignFloor(endMs, bucketMs);
+
+	const map = new Map<number, { pageviews: number; visitors: number }>();
+	for (const row of raw) {
+		map.set(Number(row.bucket), {
+			pageviews: Number(row.pageviews),
+			visitors: Number(row.visitors)
+		});
+	}
+
+	const timeseries: { date: string; pageviews: number; visitors: number }[] = [];
+	for (let t = start; t <= end; t += bucketMs) {
+		const hit = map.get(t);
+		timeseries.push({
+			date: new Date(t).toISOString(),
+			pageviews: hit?.pageviews ?? 0,
+			visitors: hit?.visitors ?? 0
+		});
+	}
+	return timeseries;
+}
 
 export function fillTimeseries(
 	days: number,

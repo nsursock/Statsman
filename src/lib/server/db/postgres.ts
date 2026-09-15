@@ -2,7 +2,14 @@ import postgres from 'postgres';
 import { randomBytes } from 'node:crypto';
 import { getPostgresCandidates, type PostgresConfig } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
-import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
+import {
+	bucketMsForSpan,
+	bucketMsForTarget,
+	clampPoints,
+	DEFAULT_POINTS,
+	fillTimeseries,
+	fillTimeseriesRange
+} from '$lib/timeseries';
 import type { EventInput, RecentEvent, Site, SiteTrackingPatch, StatsSummary, Store, User } from './types';
 import { serializeExcludedIps } from '$lib/server/exclusions';
 
@@ -161,12 +168,14 @@ async function buildStats(
 	siteId: string,
 	days: number,
 	points = DEFAULT_POINTS,
-	endMs?: number
+	endMs?: number,
+	sinceMs?: number
 ): Promise<StatsSummary> {
 	const end = endMs ?? Date.now();
-	const since = end - days * 24 * 60 * 60 * 1000;
+	const since = sinceMs ?? (end - days * 24 * 60 * 60 * 1000);
 	const targetPoints = clampPoints(points);
-	const bucketMs = bucketMsForTarget(days, targetPoints);
+	const span = end - since;
+	const bucketMs = sinceMs != null ? bucketMsForSpan(span, targetPoints) : bucketMsForTarget(days, targetPoints);
 
 	// Fan out independent aggregates in one network RTT window (Supabase latency).
 	const [
@@ -274,15 +283,27 @@ async function buildStats(
 						1000
 				);
 
-	const timeseries = fillTimeseries(
-		days,
-		rawSeries.map((r) => ({
-			bucket: r.bucket as number | string | bigint,
-			pageviews: r.pageviews as number | string,
-			visitors: r.visitors as number | string
-		})),
-		targetPoints
-	);
+	const timeseries =
+		sinceMs != null
+			? fillTimeseriesRange(
+					since,
+					end,
+					rawSeries.map((r) => ({
+						bucket: r.bucket as number | string | bigint,
+						pageviews: r.pageviews as number | string,
+						visitors: r.visitors as number | string
+					})),
+					targetPoints
+			  )
+			: fillTimeseries(
+					days,
+					rawSeries.map((r) => ({
+						bucket: r.bucket as number | string | bigint,
+						pageviews: r.pageviews as number | string,
+						visitors: r.visitors as number | string
+					})),
+					targetPoints
+			  );
 
 	return {
 		pageviews: Number(totals.pageviews),
@@ -469,7 +490,7 @@ export async function createPostgresStore(): Promise<Store> {
 
 		async getStatsRange(siteId, startMs, endMs, points = DEFAULT_POINTS) {
 			const days = Math.max(1, Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)));
-			return buildStats(db, siteId, days, points, endMs);
+			return buildStats(db, siteId, days, points, endMs, startMs);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {

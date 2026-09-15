@@ -22,6 +22,7 @@
 	let svg: SVGSVGElement;
 	const gid = $props.id();
 	const max = $derived(Math.max(1, ...data.map((d) => d.pageviews)));
+	let hoveredBar = $state(-1);
 	const w = 640;
 	const h = 200;
 	const padRight = 12;
@@ -153,6 +154,25 @@
 		return { index: i, start, end, date: data[i].date };
 	}
 
+	// Tooltip for the hovered bar — SVG-native since CSS ::after doesn't work on SVG.
+	const tooltip = $derived.by(() => {
+		if (hoveredBar < 0 || hoveredBar >= data.length) return null;
+		const bar = bars[hoveredBar];
+		const row = data[hoveredBar];
+		if (!bar || !row) return null;
+		const cx = bar.outer.x + bar.outer.w / 2;
+		const lines = [
+			formatTick(Number.isFinite(parsed[hoveredBar]?.t) ? parsed[hoveredBar].t : Date.parse(row.date), spanMs),
+			`${row.pageviews.toLocaleString()} pageviews`,
+			`${row.visitors.toLocaleString()} visitors`
+		];
+		const tw = 112;
+		const th = lines.length * 9.5 + 6;
+		const tx = Math.max(padLeft, Math.min(w - padRight - tw, cx - tw / 2));
+		const ty = Math.max(padTop, bar.outer.y - th - 4);
+		return { tx, ty, tw, th, lines };
+	});
+
 	onMount(() => {
 		if (variant === 'bars') {
 			const rects = svg.querySelectorAll('.bar-grow');
@@ -262,18 +282,8 @@
 
 	{#if variant === 'bars'}
 		{#each bars as bar (bar.i)}
-			{#if selectedBar === bar.i}
-				<rect
-					x={bar.outer.x - 2}
-					y={padTop}
-					width={bar.outer.w + 4}
-					height={plotH}
-					fill="var(--scifi-primary)"
-					opacity="0.12"
-					rx="2"
-				/>
-			{/if}
 			{#if bar.outer.h > 0}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 				<rect
 					class="bar-grow"
 					x={bar.outer.x}
@@ -282,7 +292,11 @@
 					height={bar.outer.h}
 					rx={Math.min(2, bar.outer.w / 2)}
 					fill="url(#{gid}-bar-pv)"
-					opacity={selectedBar === -1 || selectedBar === bar.i ? 1 : 0.4}
+					opacity={selectedBar === -1 || selectedBar === bar.i ? 1 : 0.3}
+					style={onBarClick ? 'cursor: pointer;' : ''}
+					onclick={onBarClick ? () => onBarClick(barRange(bar.i)) : undefined}
+					onmouseenter={() => (hoveredBar = bar.i)}
+					onmouseleave={() => (hoveredBar = -1)}
 				/>
 			{/if}
 			{#if bar.inner.h > 0}
@@ -294,30 +308,38 @@
 					height={bar.inner.h}
 					rx={Math.min(1.5, bar.inner.w / 2)}
 					fill="url(#{gid}-bar-vis)"
-					opacity={selectedBar === -1 || selectedBar === bar.i ? 1 : 0.4}
-				/>
-			{/if}
-			{#if onBarClick && bar.outer.h > 0}
-				<rect
-					x={bar.outer.x - 2}
-					y={padTop}
-					width={bar.outer.w + 4}
-					height={plotH}
-					fill="transparent"
-					role="button"
-					tabindex="0"
-					aria-label={`Filter to ${data[bar.i].date}`}
-					style="cursor: pointer;"
-					onclick={() => onBarClick(barRange(bar.i))}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							onBarClick(barRange(bar.i));
-						}
-					}}
+					opacity={selectedBar === -1 || selectedBar === bar.i ? 1 : 0.3}
+					style="pointer-events: none;"
 				/>
 			{/if}
 		{/each}
+
+		{#if tooltip}
+			<g style="pointer-events: none;">
+				<rect
+					x={tooltip.tx}
+					y={tooltip.ty}
+					width={tooltip.tw}
+					height={tooltip.th}
+					rx="3"
+					fill="rgba(var(--scifi-surface-1-rgb), 0.96)"
+					stroke="var(--scifi-border)"
+					stroke-width="1"
+				/>
+				{#each tooltip.lines as line, i}
+					<text
+						x={tooltip.tx + 6}
+						y={tooltip.ty + 9 + i * 9.5}
+						fill={i === 0 ? 'var(--scifi-cyan)' : 'var(--scifi-text)'}
+						font-size="7"
+						font-family="var(--scifi-font-mono, ui-monospace, monospace)"
+						letter-spacing="0.03em"
+					>
+						{line}
+					</text>
+				{/each}
+			</g>
+		{/if}
 	{:else}
 		<polyline
 			class="area"

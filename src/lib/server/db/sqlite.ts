@@ -4,7 +4,14 @@ import { dirname, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { getDatabasePath } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
-import { bucketMsForTarget, clampPoints, DEFAULT_POINTS, fillTimeseries } from '$lib/timeseries';
+import {
+	bucketMsForSpan,
+	bucketMsForTarget,
+	clampPoints,
+	DEFAULT_POINTS,
+	fillTimeseries,
+	fillTimeseriesRange
+} from '$lib/timeseries';
 import type {
 	EventInput,
 	RecentEvent,
@@ -164,10 +171,11 @@ function buildStats(
 	siteId: string,
 	days: number,
 	points = DEFAULT_POINTS,
-	endMs?: number
+	endMs?: number,
+	sinceMs?: number
 ): StatsSummary {
 	const end = endMs ?? Date.now();
-	const since = end - days * 24 * 60 * 60 * 1000;
+	const since = sinceMs ?? (end - days * 24 * 60 * 60 * 1000);
 	const targetPoints = clampPoints(points);
 
 	const totals = db
@@ -302,7 +310,8 @@ function buildStats(
 						1000
 				);
 
-	const bucketMs = bucketMsForTarget(days, targetPoints);
+	const span = end - since;
+	const bucketMs = sinceMs != null ? bucketMsForSpan(span, targetPoints) : bucketMsForTarget(days, targetPoints);
 	const rawSeries = db
 		.prepare(
 			`SELECT (created_at - (created_at % ?)) AS bucket,
@@ -316,7 +325,10 @@ function buildStats(
 		visitors: number;
 	}[];
 
-	const timeseries = fillTimeseries(days, rawSeries, targetPoints);
+	const timeseries =
+		sinceMs != null
+			? fillTimeseriesRange(since, end, rawSeries, targetPoints)
+			: fillTimeseries(days, rawSeries, targetPoints);
 
 	return {
 		pageviews: totals.pageviews,
@@ -461,7 +473,7 @@ export function createSqliteStore(): Store {
 
 		async getStatsRange(siteId, startMs, endMs, points = DEFAULT_POINTS) {
 			const days = Math.max(1, Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)));
-			return buildStats(db, siteId, days, points, endMs);
+			return buildStats(db, siteId, days, points, endMs, startMs);
 		},
 
 		async getRecentEvents(siteId, limit = 12) {
