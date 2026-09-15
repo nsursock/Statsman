@@ -12,7 +12,7 @@
 	let { data }: { data: PageData } = $props();
 
 	let root: HTMLElement;
-	let live = $state(true);
+	let live = $state(false);
 	let clock = $state('');
 	let siteMenuOpen = $state(false);
 

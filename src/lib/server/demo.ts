@@ -614,11 +614,14 @@ export function generateRealisticDemoEvents(
 
 			let currentPath = landingPath;
 			let currentTimestamp = sessionStart;
+			let sessionScrolled = false;
+			let sessionDwellMs = 0;
 
 			for (let p = 0; p < sessionPagesCount; p++) {
 				const cleanPath = currentPath.split('?')[0] || '/';
 				const title = TITLES[cleanPath] ?? cleanPath;
 				const pageReferrer = p === 0 ? referrer : 'localhost';
+				const pageStart = currentTimestamp;
 
 				events.push({
 					siteId,
@@ -636,80 +639,86 @@ export function generateRealisticDemoEvents(
 					lat,
 					lng,
 					visitorHash: visitor,
-					createdAt: currentTimestamp
+					createdAt: pageStart
 				});
 
+				const pageDwellSec = isBounce
+					? rng.logNormal(2.4, 0.6)
+					: rng.logNormal(3.7, 0.5);
+				const pageDwellMs = Math.round(Math.max(2000, pageDwellSec * 1000));
+				const pageEnd = Math.min(now, pageStart + pageDwellMs);
+
+				// Scroll milestones — emitted in ascending order (25→50→75→90) with
+				// increasing timestamps. Picking a max depth and emitting all marks
+				// up to it guarantees count(25) >= count(50) >= count(75) >= count(90).
+				const isContentPage =
+					cleanPath.startsWith('/posts/') ||
+					cleanPath === '/' ||
+					cleanPath === '/about' ||
+					cleanPath === '/uses';
+				if (isContentPage && pageDwellSec > 8) {
+					const scrollProb = cleanPath.startsWith('/posts/') ? 0.78 : 0.45;
+					if (rng.next() < scrollProb) {
+						const maxDepth = rng.weightedChoice<number>([
+							[25, 18],
+							[50, 24],
+							[75, 36],
+							[90, 22]
+						]);
+						const marks = [25, 50, 75, 90].filter((m) => m <= maxDepth);
+						for (let mi = 0; mi < marks.length; mi++) {
+							const mark = marks[mi];
+							const frac = (mi + 1) / (marks.length + 1);
+							const scrollAt = pageStart + Math.round(pageDwellMs * frac);
+							if (scrollAt >= now) break;
+							events.push({
+								siteId,
+								name: `scroll_${mark}`,
+								path: cleanPath,
+								props: JSON.stringify({ percent: mark }),
+								country: geo.country,
+								city: geo.city,
+								lat,
+								lng,
+								browser: envClient.browser,
+								os: envClient.os,
+								device: envClient.device,
+								visitorHash: visitor,
+								createdAt: scrollAt
+							});
+							sessionScrolled = true;
+						}
+					}
+				}
+
 				if (p < sessionPagesCount - 1) {
-					events.push({
-						siteId,
-						name: 'route_change',
-						path: cleanPath,
-						props: JSON.stringify({ to: cleanPath }),
-						country: geo.country,
-						city: geo.city,
-						lat,
-						lng,
-						browser: envClient.browser,
-						os: envClient.os,
-						device: envClient.device,
-						visitorHash: visitor,
-						createdAt: currentTimestamp + 500
-					});
-
-					const dwellSec = rng.logNormal(3.7, 0.5);
-					currentTimestamp += Math.round(dwellSec * 1000);
-
+					let nextPath: string;
 					if (cleanPath.startsWith('/posts/')) {
-						currentPath = rng.weightedChoice<string>([
+						nextPath = rng.weightedChoice<string>([
 							['/', 45],
 							[`/posts/${rng.choice(postSlugs)}`, 35],
 							['/about', 12],
 							['/uses', 8]
 						]);
 					} else if (cleanPath === '/') {
-						currentPath = rng.weightedChoice<string>([
+						nextPath = rng.weightedChoice<string>([
 							[`/posts/${rng.choice(postSlugs)}`, 70],
 							['/about', 18],
 							['/uses', 12]
 						]);
 					} else {
-						currentPath = rng.weightedChoice<string>([
+						nextPath = rng.weightedChoice<string>([
 							['/', 60],
 							[`/posts/${rng.choice(postSlugs)}`, 40]
 						]);
 					}
-				}
-			}
 
-			const totalDurationSec = isBounce
-				? rng.logNormal(2.4, 0.6)
-				: rng.logNormal(4.7, 0.5);
-			const durationMs = Math.round(Math.max(3000, totalDurationSec * 1000));
-
-			events.push({
-				siteId,
-				name: 'engagement',
-				path: landingPath.split('?')[0] || '/',
-				durationMs,
-				country: geo.country,
-				city: geo.city,
-				lat,
-				lng,
-				browser: envClient.browser,
-				os: envClient.os,
-				device: envClient.device,
-				visitorHash: visitor,
-				createdAt: Math.min(now, currentTimestamp + Math.min(durationMs, 180000))
-			});
-
-			const landingClean = landingPath.split('?')[0] || '/';
-			if (totalDurationSec > 35 && landingClean.startsWith('/posts/')) {
-				if (rng.next() < 0.72) {
+					const nextClean = nextPath.split('?')[0] || '/';
 					events.push({
 						siteId,
-						name: 'scroll_75',
-						path: landingClean,
-						props: JSON.stringify({ demo: true }),
+						name: 'route_change',
+						path: nextClean,
+						props: JSON.stringify({ from: cleanPath }),
 						country: geo.country,
 						city: geo.city,
 						lat,
@@ -718,17 +727,34 @@ export function generateRealisticDemoEvents(
 						os: envClient.os,
 						device: envClient.device,
 						visitorHash: visitor,
-						createdAt: currentTimestamp + 25000
+						createdAt: pageEnd
 					});
+
+					currentPath = nextPath;
+					currentTimestamp = pageEnd;
+				} else {
+					currentTimestamp = pageEnd;
 				}
+
+				sessionDwellMs += pageDwellMs;
 			}
 
-			if (totalDurationSec > 60) {
+			const landingClean = landingPath.split('?')[0] || '/';
+			const totalDurationSec = sessionDwellMs / 1000;
+			const durationMs = Math.round(Math.max(3000, sessionDwellMs));
+			const engagementAt = Math.min(now, currentTimestamp + Math.min(durationMs, 180000));
+
+			// engaged_visit fires before engagement (real tracker calls
+			// maybeEngagedVisit inside sendEngagement). Trigger: dwell >= 10s OR scrolled.
+			if (sessionDwellMs >= 10000 || sessionScrolled) {
 				events.push({
 					siteId,
 					name: 'engaged_visit',
 					path: landingClean,
-					props: JSON.stringify({ durationSec: Math.round(totalDurationSec) }),
+					props: JSON.stringify({
+						dwell_ms: Math.round(sessionDwellMs),
+						scrolled: sessionScrolled
+					}),
 					country: geo.country,
 					city: geo.city,
 					lat,
@@ -737,16 +763,33 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + 60000
+					createdAt: Math.max(0, engagementAt - 1)
 				});
 			}
 
+			events.push({
+				siteId,
+				name: 'engagement',
+				path: landingClean,
+				durationMs,
+				country: geo.country,
+				city: geo.city,
+				lat,
+				lng,
+				browser: envClient.browser,
+					os: envClient.os,
+				device: envClient.device,
+				visitorHash: visitor,
+				createdAt: engagementAt
+			});
+
 			if (landingClean === '/uses' && rng.next() < 0.28) {
+				const href = 'https://github.com/statsman';
 				events.push({
 					siteId,
 					name: 'outbound_link',
 					path: landingClean,
-					props: JSON.stringify({ href: 'https://github.com/statsman' }),
+					props: JSON.stringify({ host: 'github.com', href }),
 					country: geo.country,
 					city: geo.city,
 					lat,
@@ -755,14 +798,15 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + rng.int(10000, 30000)
+					createdAt: Math.min(now, currentTimestamp + rng.int(10000, 30000))
 				});
 			} else if (landingClean.startsWith('/posts/') && rng.next() < 0.12) {
+				const href = 'https://sqlite.org';
 				events.push({
 					siteId,
 					name: 'outbound_link',
 					path: landingClean,
-					props: JSON.stringify({ href: 'https://sqlite.org' }),
+					props: JSON.stringify({ host: 'sqlite.org', href }),
 					country: geo.country,
 					city: geo.city,
 					lat,
@@ -771,7 +815,7 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + rng.int(15000, 45000)
+					createdAt: Math.min(now, currentTimestamp + rng.int(15000, 45000))
 				});
 			}
 
@@ -789,16 +833,18 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + rng.int(35000, 75000)
+					createdAt: Math.min(now, currentTimestamp + rng.int(35000, 75000))
 				});
 			}
 
 			if (landingClean === '/posts/sqlite-forever' && rng.next() < 0.08) {
+				const file = 'statsman-schema.sql';
+				const href = `https://statsman.dev/${file}`;
 				events.push({
 					siteId,
 					name: 'download',
 					path: landingClean,
-					props: JSON.stringify({ file: 'statsman-schema.sql' }),
+					props: JSON.stringify({ file, href }),
 					country: geo.country,
 					city: geo.city,
 					lat,
@@ -807,7 +853,7 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + rng.int(20000, 50000)
+					createdAt: Math.min(now, currentTimestamp + rng.int(20000, 50000))
 				});
 			}
 
@@ -825,7 +871,7 @@ export function generateRealisticDemoEvents(
 					os: envClient.os,
 					device: envClient.device,
 					visitorHash: visitor,
-					createdAt: currentTimestamp + rng.int(45000, 90000)
+					createdAt: Math.min(now, currentTimestamp + rng.int(45000, 90000))
 				});
 			}
 		}

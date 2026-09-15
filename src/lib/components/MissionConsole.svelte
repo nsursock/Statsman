@@ -161,6 +161,30 @@
 	const maxEventViews = $derived(Math.max(1, ...displayStats.customEvents.map((r) => r.views), 1));
 	const maxCityViews = $derived(Math.max(1, displayStats.cities[0]?.views ?? 1));
 
+	// Scroll depth funnel — extract scroll_25/50/75/90 from customEvents.
+	const scrollFunnel = $derived.by(() => {
+		const find = (name: string) =>
+			displayStats.customEvents.find((e) => e.label === name)?.views ?? 0;
+		const pageviews = displayStats.pageviews;
+		const steps = [
+			{ label: 'Pageviews', count: pageviews },
+			{ label: 'Scroll 25%', count: find('scroll_25') },
+			{ label: 'Scroll 50%', count: find('scroll_50') },
+			{ label: 'Scroll 75%', count: find('scroll_75') },
+			{ label: 'Scroll 90%', count: find('scroll_90') }
+		];
+		const max = Math.max(1, pageviews);
+		return steps.map((s, i) => ({
+			...s,
+			pct: (s.count / max) * 0.82,
+			retention: i === 0 ? 1 : s.count / Math.max(1, steps[i - 1].count),
+			dropoff: i === 0 ? 0 : 1 - s.count / Math.max(1, steps[i - 1].count),
+			tip: i === 0
+				? `${s.label} · ${s.count.toLocaleString()}`
+				: `${s.label} · ${s.count.toLocaleString()} · ${Math.round((s.count / Math.max(1, steps[i - 1].count)) * 100)}% stayed`
+		}));
+	});
+
 	function streamLabel(e: EventRow): string {
 		if (e.name && e.name !== 'pageview') return e.name;
 		const path = e.path.split('?')[0] || '/';
@@ -617,6 +641,42 @@
 		</div>
 	</section>
 
+	<section class="console-panel masonry-item funnel-panel">
+		<div class="pane-header">
+			<span class="pane-title"><span class="pane-title-bar"></span> Scroll depth</span>
+			<span class="text-scifi-muted text-[0.62rem] tracking-[0.12em] uppercase">
+				{#if scrollFunnel[1]?.count}{Math.round((scrollFunnel[1].count / Math.max(1, scrollFunnel[0].count)) * 100)}% engaged{/if}
+			</span>
+		</div>
+		<div class="funnel-body" data-deck>
+			<div class="funnel-chart">
+				{#each scrollFunnel as step, i}
+					<div
+						class="funnel-col tooltip tooltip-top"
+						style="height: {step.pct * 100}%"
+						data-tip={step.tip}
+					>
+						<span class="funnel-col-count tabular-nums">{step.count > 0 ? step.count.toLocaleString() : ''}</span>
+						<div class="funnel-bar"></div>
+						<span class="funnel-col-label">{step.label.replace('Scroll ', '').replace('Pageviews', 'PV')}</span>
+					</div>
+				{/each}
+			</div>
+			<div class="funnel-legend">
+				{#each scrollFunnel as step, i}
+					{#if i > 0 && step.dropoff > 0}
+						<span class="funnel-legend-item">
+							<span class="text-scifi-muted">↓{Math.round(step.dropoff * 100)}%</span>
+							<span class="text-scifi-success/70">{Math.round(step.retention * 100)}%</span>
+						</span>
+					{:else}
+						<span class="funnel-legend-item"></span>
+					{/if}
+				{/each}
+			</div>
+		</div>
+	</section>
+
 	<section class="console-panel masonry-item">
 		<div class="pane-header">
 			<span class="pane-title"><span class="pane-title-bar"></span> Events</span>
@@ -805,6 +865,74 @@
 	.meter-fill-secondary {
 		background: linear-gradient(90deg, var(--scifi-secondary), var(--scifi-primary));
 		box-shadow: 0 0 8px var(--scifi-secondary-glow);
+	}
+
+	.funnel-body {
+		padding: 0.75rem 0.9rem 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.funnel-panel {
+		overflow: visible;
+	}
+	.funnel-panel .funnel-col::after {
+		z-index: 200;
+		background: rgb(var(--scifi-surface-1-rgb));
+	}
+	.funnel-chart {
+		display: flex;
+		align-items: flex-end;
+		justify-content: stretch;
+		gap: 0.4rem;
+		height: 140px;
+	}
+	.funnel-col {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.2rem;
+		min-width: 0;
+		overflow: visible;
+	}
+	.funnel-col-count {
+		font-size: 0.58rem;
+		color: var(--scifi-muted);
+		line-height: 1;
+		white-space: nowrap;
+	}
+	.funnel-bar {
+		width: 100%;
+		border-radius: 3px 3px 0 0;
+		background: linear-gradient(180deg, var(--scifi-cyan), var(--scifi-primary));
+		box-shadow: 0 0 10px var(--scifi-primary-glow);
+		min-height: 2px;
+		flex: 1;
+		transition: height 0.7s var(--scifi-ease, ease-out);
+	}
+	.funnel-col-label {
+		font-size: 0.55rem;
+		letter-spacing: 0.04em;
+		color: var(--scifi-muted);
+		white-space: nowrap;
+		line-height: 1;
+	}
+	.funnel-legend {
+		display: flex;
+		justify-content: stretch;
+		gap: 0.4rem;
+	}
+	.funnel-legend-item {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.1rem;
+		font-size: 0.55rem;
+		letter-spacing: 0.02em;
+		min-width: 0;
 	}
 
 	@keyframes feed-in {
