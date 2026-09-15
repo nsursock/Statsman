@@ -249,7 +249,7 @@ async function buildStats(
 			FROM events
 			WHERE site_id = ${siteId} AND created_at >= ${since} AND created_at < ${end} AND name = 'pageview'
 				AND lat IS NOT NULL AND lng IS NOT NULL
-			GROUP BY ROUND(lat::numeric, 2), ROUND(lng::numeric, 2)
+			GROUP BY ROUND(lat::numeric, 2), ROUND(lng::numeric, 2), city, country
 			ORDER BY views DESC LIMIT 200`,
 		db`
 			SELECT name AS label, COUNT(*)::int AS views FROM events

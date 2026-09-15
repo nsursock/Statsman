@@ -295,7 +295,7 @@ function buildStats(
 			 FROM events
 			 WHERE site_id = ? AND created_at >= ? AND created_at < ? AND name = 'pageview'
 				AND lat IS NOT NULL AND lng IS NOT NULL
-			 GROUP BY ROUND(lat, 2), ROUND(lng, 2)
+			 GROUP BY ROUND(lat, 2), ROUND(lng, 2), city, country
 			 ORDER BY views DESC LIMIT 200`
 		)
 		.all(siteId, since, end) as {
