@@ -1,0 +1,34 @@
+import { expect, test } from '@playwright/test';
+import { collectBeacons } from '../helpers/beacons';
+import { CT_URL, SITE_CT } from '../helpers/ports';
+import { getStats, openAccess, pollStats } from '../helpers/statsman-api';
+
+test('Come & Terry sends real blog traffic through Statsman', async ({ page, request }) => {
+	const cookie = await openAccess(request);
+	const baseline = await getStats(request, SITE_CT, cookie);
+	const { beacons, statuses } = collectBeacons(page);
+	await page.goto(`${CT_URL}/`);
+	const tag = page.locator(`script[src="http://localhost:4173/tracker.js"][data-site="${SITE_CT}"][data-allow-localhost]`);
+	await expect(tag).toHaveCount(1);
+	await expect.poll(() => beacons.filter((b) => b.name === 'pageview').length).toBeGreaterThanOrEqual(1);
+	await page.goto(`${CT_URL}/about`);
+	await page.goto(`${CT_URL}/`);
+	const postLink = page.locator('a[href*="/posts/the-first-chase"]').first();
+	await expect(postLink).toBeVisible();
+	await postLink.click();
+	await expect(page).toHaveURL(/\/posts\/the-first-chase/);
+	await page.setViewportSize({ width: 1280, height: 400 });
+	await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+	await page.waitForTimeout(100);
+	await expect.poll(() => beacons.some((b) => b.name === 'scroll_90')).toBeTruthy();
+	await page.evaluate(() => dispatchEvent(new Event('pagehide')));
+	await expect.poll(() => beacons.some((b) => b.name === 'engagement')).toBeTruthy();
+	await expect.poll(() => beacons.some((b) => b.name === 'engaged_visit')).toBeTruthy();
+	const postPageview = beacons.find((b) => b.name === 'pageview' && b.path.includes('/posts/the-first-chase'));
+	expect(postPageview?.referrer).toContain('127.0.0.1:4181');
+	expect(beacons.every((b) => b.siteId === SITE_CT)).toBeTruthy();
+	expect(statuses.every((status) => status === 200)).toBeTruthy();
+	const stats = await pollStats(request, SITE_CT, cookie, (current) => current.pageviews >= baseline.pageviews + 3 && current.customEvents.some((event: any) => event.label === 'scroll_90'));
+	expect(stats.customEvents.map((event: any) => event.label)).toEqual(expect.arrayContaining(['scroll_90', 'engaged_visit']));
+	expect(stats.topPages.some((entry: any) => entry.path.includes('/posts/the-first-chase'))).toBeTruthy();
+});

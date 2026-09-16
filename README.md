@@ -20,17 +20,17 @@ Cookieless pageviews · ScifiUI console · SQLite or Postgres · Docker-ready.
 
 Same codebase. Cloud customers sign up on the main site. Self-host customers follow [`/self-host`](/self-host).
 
-Local smokes:
+Local end-to-end regression tests use Chromium, a throwaway Statsman database, and real builds of the Come & Terry and TilBlog repositories:
 
 ```bash
-# Cloud multi-tenant (dev already on :5173 with STATSMAN_MODE=cloud)
-node scripts/smoke-multi-client.mjs
+# Once
+npm run e2e:install
 
-# Self-host operator (separate port + DB file)
-STATSMAN_MODE=selfhost STATSMAN_DATABASE_PATH=./data/smoke-selfhost.db \
-  PUBLIC_ORIGIN=http://localhost:5174 npm run dev -- --port 5174
-SMOKE_BASE=http://localhost:5174 node scripts/smoke-selfhost.mjs
+# Build Statsman + both blogs, then run the complete suite
+npm run test:e2e
 ```
+
+The blog repositories default to `../Come&Terry` and `../TilBlog-TodayILearned` and must already have their dependencies installed. Override them with `E2E_BLOG_CT_DIR` and `E2E_BLOG_TIL_DIR`. Set `E2E_REBUILD_BLOGS=1` to force both cached blog fixtures to rebuild.
 
 ## Hybrid model
 
