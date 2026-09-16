@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { randomBytes } from 'node:crypto';
-import { getPostgresCandidates, type PostgresConfig } from '$lib/server/config';
+import { getPostgresCandidates, getPostgresSslMode, type PostgresConfig } from '$lib/server/config';
 import { aggregatePathMeta } from '$lib/server/path-meta';
 import {
 	bucketMsForSpan,
@@ -31,9 +31,10 @@ function clientFor(cfg: PostgresConfig) {
 		cfg.kind === 'url'
 			? /@(localhost|127\.0\.0\.1)(:|\/)/i.test(cfg.url)
 			: /^(localhost|127\.0\.0\.1)$/i.test(cfg.host);
+	const mode = getPostgresSslMode();
 	const opts = {
 		max: 10,
-		ssl: local ? (false as const) : ('require' as const),
+		ssl: mode === 'disable' ? (false as const) : (mode ?? (local ? (false as const) : ('require' as const))),
 		connect_timeout: 15
 	};
 	if (cfg.kind === 'url') return postgres(cfg.url, opts);

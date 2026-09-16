@@ -2,29 +2,47 @@ services:
   statsman:
     build: .
     ports:
-      - "3000:3000"
+      - "${STATSMAN_PORT:-3000}:3000"
     environment:
+      # Fixed on purpose: this compose file is the self-host deployment.
+      # A cloud-mode deploy needs its own config (Supabase Auth, Stripe, ...).
       STATSMAN_MODE: selfhost
-      STATSMAN_DATABASE_PATH: /data/statsman.db
-      PUBLIC_ORIGIN: http://localhost:3000
-      # Optional lock for /dashboard
-      # STATSMAN_ADMIN_TOKEN: change-me
-      STATSMAN_SESSION_SECRET: change-me-in-production
-    volumes:
-      - statsman-data:/data
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:3000}
+      DATABASE_URL: postgres://${POSTGRES_USER:-statsman}:${POSTGRES_PASSWORD:-statsman}@postgres:5432/${POSTGRES_DB:-statsman}
+      PGSSLMODE: disable
+      STATSMAN_SESSION_SECRET: ${STATSMAN_SESSION_SECRET:-change-me-in-production}
+      STATSMAN_ADMIN_TOKEN: ${STATSMAN_ADMIN_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
-  # Optional Postgres for cloud-style deploys:
-  # postgres:
-  #   image: postgres:16-alpine
-  #   environment:
-  #     POSTGRES_USER: statsman
-  #     POSTGRES_PASSWORD: statsman
-  #     POSTGRES_DB: statsman
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-statsman}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-statsman}
+      POSTGRES_DB: ${POSTGRES_DB:-statsman}
+    # Expose only if you need direct psql access from the host:
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+# SQLite-only alternative (no postgres service): on the statsman service drop
+# DATABASE_URL / PGSSLMODE / depends_on and set:
+#   environment:
+#     STATSMAN_DATABASE_PATH: /data/statsman.db
+#   volumes:
+#     - statsman-data:/data
+# then replace the pgdata volume below with:
+#   statsman-data:
 
 volumes:
-  statsman-data:
+  pgdata:

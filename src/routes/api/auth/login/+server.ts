@@ -1,13 +1,13 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getAdminToken, isCloud, supabaseAuthConfigured } from '$lib/server/config';
+import { getAdminToken, isCloud } from '$lib/server/config';
 import {
 	establishUserSession,
 	parseInternalPath,
 	setAccessCookie,
 	setAdminCookie
 } from '$lib/server/auth';
-import { createSupabaseAuthClient } from '$lib/server/supabase';
+import { authConfigured, signInWithPassword } from '$lib/server/auth-provider';
 import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		error(400, 'Password login is cloud-only. Unlock with STATSMAN_ADMIN_TOKEN or open access.');
 	}
 
-	if (!supabaseAuthConfigured()) {
+	if (!authConfigured()) {
 		error(503, 'Supabase Auth is not configured (SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY)');
 	}
 
@@ -44,18 +44,15 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (!email || !email.includes('@')) error(400, 'Valid email required');
 	if (!password) error(400, 'Password required');
 
-	const supabase = createSupabaseAuthClient();
-	const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-	if (authErr) {
-		const msg = authErr.message || 'Invalid email or password';
-		if (/confirm|verified|not confirmed/i.test(msg)) {
+	const res = await signInWithPassword(email, password);
+	if (!res.ok) {
+		if (/confirm|verified|not confirmed/i.test(res.error)) {
 			error(403, 'Confirm your email before signing in — check your inbox.');
 		}
-		error(401, msg);
+		error(401, res.error);
 	}
-	if (!data.user?.email) error(401, 'Login failed');
 
-	const user = await ensureStatsmanUserFromAuth(data.user.email);
+	const user = await ensureStatsmanUserFromAuth(res.email);
 	await establishUserSession(cookies, user.id);
 
 	const next = parseInternalPath(typeof body.next === 'string' ? body.next : null);

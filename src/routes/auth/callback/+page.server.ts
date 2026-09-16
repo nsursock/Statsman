@@ -1,10 +1,14 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { isCloud, supabaseAuthConfigured } from '$lib/server/config';
+import { isCloud } from '$lib/server/config';
 import { establishUserSession, parseInternalPath } from '$lib/server/auth';
-import { createSupabaseAuthClient } from '$lib/server/supabase';
+import {
+	authConfigured,
+	exchangeCodeForEmail,
+	verifyEmailToken,
+	type EmailTokenType
+} from '$lib/server/auth-provider';
 import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
-import type { EmailOtpType } from '@supabase/supabase-js';
 
 /**
  * Server-side path when Supabase puts `code` / `token_hash` in the query string.
@@ -17,7 +21,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	const supabaseError =
 		url.searchParams.get('error_description') || url.searchParams.get('error') || '';
 
-	if (!supabaseAuthConfigured()) {
+	if (!authConfigured()) {
 		redirect(303, `/login?error=${encodeURIComponent('Supabase Auth is not configured')}`);
 	}
 
@@ -25,9 +29,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		redirect(303, `/login?error=${encodeURIComponent(supabaseError)}`);
 	}
 
-	const supabase = createSupabaseAuthClient();
 	const token_hash = url.searchParams.get('token_hash');
-	const type = (url.searchParams.get('type') || 'email') as EmailOtpType;
+	const type = (url.searchParams.get('type') || 'email') as EmailTokenType;
 	const code = url.searchParams.get('code');
 
 	if (token_hash && type === 'recovery') {
@@ -38,21 +41,21 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	}
 
 	if (code) {
-		const { data, error: authErr } = await supabase.auth.exchangeCodeForSession(code);
-		if (authErr || !data.user?.email) {
-			redirect(303, `/login?error=${encodeURIComponent(authErr?.message || 'Confirm failed')}`);
+		const res = await exchangeCodeForEmail(code);
+		if (!res.ok) {
+			redirect(303, `/login?error=${encodeURIComponent(res.error)}`);
 		}
-		const user = await ensureStatsmanUserFromAuth(data.user.email);
+		const user = await ensureStatsmanUserFromAuth(res.email);
 		await establishUserSession(cookies, user.id);
 		redirect(303, next);
 	}
 
 	if (token_hash) {
-		const { data, error: authErr } = await supabase.auth.verifyOtp({ token_hash, type });
-		if (authErr || !data.user?.email) {
-			redirect(303, `/login?error=${encodeURIComponent(authErr?.message || 'Confirm failed')}`);
+		const res = await verifyEmailToken(token_hash, type);
+		if (!res.ok) {
+			redirect(303, `/login?error=${encodeURIComponent(res.error)}`);
 		}
-		const user = await ensureStatsmanUserFromAuth(data.user.email);
+		const user = await ensureStatsmanUserFromAuth(res.email);
 		await establishUserSession(cookies, user.id);
 		redirect(303, next);
 	}

@@ -1,13 +1,13 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getPublicOrigin, isCloud, supabaseAuthConfigured } from '$lib/server/config';
+import { getPublicOrigin, isCloud } from '$lib/server/config';
 import { establishUserSession, parseInternalPath } from '$lib/server/auth';
-import { createSupabaseAuthClient } from '$lib/server/supabase';
+import { authConfigured, signUpWithPassword } from '$lib/server/auth-provider';
 import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (!isCloud()) error(400, 'Signup is cloud-only');
-	if (!supabaseAuthConfigured()) {
+	if (!authConfigured()) {
 		error(503, 'Supabase Auth is not configured (SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY)');
 	}
 
@@ -23,20 +23,15 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	const origin = getPublicOrigin();
 	const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
-	const supabase = createSupabaseAuthClient();
-	const { data, error: authErr } = await supabase.auth.signUp({
-		email,
-		password,
-		options: { emailRedirectTo: redirectTo }
-	});
-	if (authErr) error(400, authErr.message || 'Could not create account');
+	const res = await signUpWithPassword(email, password, redirectTo);
+	if (!res.ok) error(400, res.error);
 
 	// Pre-create Statsman user so sites/plan attach by email after verify.
 	await ensureStatsmanUserFromAuth(email);
 
 	// If email confirmation is disabled in Supabase, a session is returned immediately.
-	if (data.session && data.user?.email) {
-		const user = await ensureStatsmanUserFromAuth(data.user.email);
+	if (res.hasSession) {
+		const user = await ensureStatsmanUserFromAuth(res.email);
 		await establishUserSession(cookies, user.id);
 		return json({ ok: true, mode: 'password', confirmed: true, next });
 	}

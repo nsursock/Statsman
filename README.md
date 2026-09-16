@@ -53,7 +53,7 @@ Open [http://localhost:5173](http://localhost:5173). For local marketing UI set 
 
 ## Self-host (production)
 
-Step-by-step: [`/self-host`](/self-host).
+Step-by-step: [`/self-host`](/self-host). Full guide: [SELF_HOSTING.md](SELF_HOSTING.md).
 
 ```bash
 docker compose up -d --build

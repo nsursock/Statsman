@@ -118,6 +118,18 @@ export function getPostgresConfig(): PostgresConfig | undefined {
 	return getPostgresCandidates()[0];
 }
 
+export type PostgresSslMode = 'disable' | 'prefer' | 'require' | 'verify-full';
+
+/** Standard libpq PGSSLMODE. Unset → auto (off for localhost, require otherwise). */
+export function getPostgresSslMode(): PostgresSslMode | undefined {
+	const raw = (env.PGSSLMODE || '').trim().toLowerCase();
+	if (raw === 'disable' || raw === 'allow') return 'disable';
+	if (raw === 'prefer') return 'prefer';
+	if (raw === 'require' || raw === 'verify-ca') return 'require';
+	if (raw === 'verify-full') return 'verify-full';
+	return undefined;
+}
+
 /** @deprecated Prefer getPostgresConfig(); kept for health/debug display. */
 export function getDatabaseUrl(): string | undefined {
 	const cfg = getPostgresConfig();
