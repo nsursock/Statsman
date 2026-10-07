@@ -27,3 +27,6 @@ vite.config.ts.timestamp-*
 
 # End-to-end test state
 /.e2e
+
+# User specific
+.cadan/
