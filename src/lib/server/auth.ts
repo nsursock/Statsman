@@ -8,6 +8,8 @@ export const SESSION_COOKIE = 'statsman_session';
 export const ADMIN_COOKIE = 'statsman_admin';
 /** Open self-host: explicit “entered console” flag so logout actually sticks. */
 export const ACCESS_COOKIE = 'statsman_access';
+/** Where to send the browser after a confirmation link. Not put on the email URL. */
+export const AUTH_NEXT_COOKIE = 'statsman_auth_next';
 
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30;
 
@@ -90,6 +92,25 @@ export function setAccessCookie(cookies: Cookies) {
 
 export function clearAccessCookie(cookies: Cookies) {
 	cookies.delete(ACCESS_COOKIE, { path: '/' });
+}
+
+export function setAuthNextCookie(cookies: Cookies, next: string) {
+	const safe = parseInternalPath(next);
+	if (!safe) return;
+	cookies.set(AUTH_NEXT_COOKIE, safe, {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'lax',
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60
+	});
+}
+
+export function consumeAuthNextCookie(cookies: Cookies): string | null {
+	const raw = cookies.get(AUTH_NEXT_COOKIE);
+	if (!raw) return null;
+	cookies.delete(AUTH_NEXT_COOKIE, { path: '/' });
+	return parseInternalPath(raw);
 }
 
 export function signState(payload: string): string {

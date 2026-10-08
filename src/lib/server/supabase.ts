@@ -15,7 +15,10 @@ export function createSupabaseAuthClient(): SupabaseClient {
 		auth: {
 			persistSession: false,
 			autoRefreshToken: false,
-			detectSessionInUrl: false
+			detectSessionInUrl: false,
+			// PKCE appends a query param to redirectTo, which fails Supabase's exact
+			// allow-list match and makes confirm/reset emails fall back to Site URL.
+			flowType: 'implicit'
 		}
 	});
 }

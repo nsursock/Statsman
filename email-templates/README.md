@@ -37,7 +37,7 @@ Dashboard → **Authentication** → **Email** → **Templates**:
 | Confirm signup | [`confirm-signup.html`](./confirm-signup.html) | `Confirm your Statsman account` |
 | Reset password | [`reset-password.html`](./reset-password.html) | `Reset your Statsman password` |
 
-Keep `{{ .ConfirmationURL }}` and `{{ .Email }}` unchanged.
+The button links to the app with `{{ .TokenHash }}` (`/auth/callback` or `/auth/reset`). Signup stores `app_origin` in user metadata so the host is the public site even when Supabase Site URL is still `http://localhost:3000`. Re-paste both templates after pulling this change. Keep `{{ .Email }}` unchanged.
 
 ## 4. URL config (same as before)
 

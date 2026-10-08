@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { isCloud } from '$lib/server/config';
-import { establishUserSession, parseInternalPath } from '$lib/server/auth';
+import { consumeAuthNextCookie, establishUserSession, parseInternalPath } from '$lib/server/auth';
 import {
 	authConfigured,
 	exchangeCodeForEmail,
@@ -17,7 +17,8 @@ import { ensureStatsmanUserFromAuth } from '$lib/server/user-sync';
 export const load: PageServerLoad = async ({ url, cookies }) => {
 	if (!isCloud()) redirect(303, '/login');
 
-	const next = parseInternalPath(url.searchParams.get('next')) || '/dashboard';
+	const next =
+		parseInternalPath(url.searchParams.get('next')) || consumeAuthNextCookie(cookies) || '/dashboard';
 	const supabaseError =
 		url.searchParams.get('error_description') || url.searchParams.get('error') || '';
 

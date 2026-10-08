@@ -1,5 +1,7 @@
+import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
+import { forwardedOrigin, pickAuthEmailOrigin } from '$lib/server/public-origin';
 
 /** How this deploy behaves:
  *  - selfhost — customer OSS install: app only (login → dashboard)
@@ -26,6 +28,22 @@ export function getPublicOrigin(): string {
 		/\/$/,
 		''
 	);
+}
+
+/**
+ * Origin for Supabase confirm / reset links.
+ * Exact paths (`/auth/callback`, `/auth/reset`) are appended by the caller so the
+ * URL matches the Auth redirect allow list. Query strings are omitted on purpose:
+ * Supabase falls back to Site URL (often `http://localhost:3000`) on a mismatch.
+ */
+export function getAuthEmailOrigin(requestUrl: URL, request: Request): string {
+	return pickAuthEmailOrigin({
+		configured: getPublicOrigin(),
+		requestOrigin: requestUrl.origin,
+		adapterOrigin: (env.ORIGIN ?? '').trim(),
+		forwardedOrigin: forwardedOrigin(request),
+		dev
+	});
 }
 
 /** Hostname for PUBLIC_ORIGIN, or null if unset/invalid. */

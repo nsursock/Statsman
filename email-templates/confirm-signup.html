@@ -53,7 +53,7 @@
 
                 <tr>
                   <td align="center" style="padding:24px 28px;">
-                    <a href="{{ .ConfirmationURL }}"
+                    <a href="{{ if .Data.app_origin }}{{ .Data.app_origin }}/auth/callback?token_hash={{ .TokenHash }}&type=email{{ else }}{{ .ConfirmationURL }}{{ end }}"
                        style="display:inline-block;padding:14px 28px;background:#ff2e9a;color:#ffffff;text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:6px;box-shadow:0 0 24px rgba(255,46,154,0.35);">
                       Confirm email →
                     </a>
@@ -66,7 +66,7 @@
                       Button not working? Paste this link:
                     </p>
                     <p style="margin:0;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1.5;color:#2ee6ff;">
-                      {{ .ConfirmationURL }}
+                      {{ if .Data.app_origin }}{{ .Data.app_origin }}/auth/callback?token_hash={{ .TokenHash }}&type=email{{ else }}{{ .ConfirmationURL }}{{ end }}
                     </p>
                   </td>
                 </tr>

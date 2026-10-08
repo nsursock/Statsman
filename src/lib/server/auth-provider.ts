@@ -36,10 +36,21 @@ export async function signUpWithPassword(
 	emailRedirectTo: string
 ): Promise<AuthResult> {
 	const supabase = createSupabaseAuthClient();
+	let appOrigin = '';
+	try {
+		appOrigin = new URL(emailRedirectTo).origin;
+	} catch {
+		appOrigin = '';
+	}
 	const { data, error } = await supabase.auth.signUp({
 		email,
 		password,
-		options: { emailRedirectTo }
+		options: {
+			emailRedirectTo,
+			// Email templates can build {{ .Data.app_origin }}/auth/callback
+			// so the link host is ours even when Supabase Site URL is localhost.
+			data: appOrigin ? { app_origin: appOrigin } : undefined
+		}
 	});
 	if (error) return { ok: false, error: error.message || 'Could not create account' };
 	return { ok: true, email: data.user?.email ?? email, hasSession: Boolean(data.session) };
